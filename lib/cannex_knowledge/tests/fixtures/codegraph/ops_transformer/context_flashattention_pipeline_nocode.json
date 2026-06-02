@@ -1,0 +1,149 @@
+{
+  "query": "FlashAttention pipeline",
+  "summary": "Found 5 relevant code symbols across 3 files. Key entry points: FlashAttention, PipelineState, PipelineStageMixCore. 2 relationships identified.",
+  "entryPoints": [
+    {
+      "id": "function:e9a9f103633d7a6e05249127abe23e12",
+      "kind": "function",
+      "name": "FlashAttention",
+      "qualifiedName": "FlashAttention",
+      "filePath": "attention/common/op_kernel/arch35/fia_kernel_noquant_gqa.h",
+      "language": "cpp",
+      "startLine": 397,
+      "endLine": 443,
+      "visibility": null,
+      "isExported": false,
+      "isAsync": false,
+      "isStatic": false
+    },
+    {
+      "id": "struct:57bb362e8ca9938c80e625baf9976a74",
+      "kind": "struct",
+      "name": "PipelineState",
+      "qualifiedName": "PipelineState",
+      "filePath": "mc2/3rd/weight_quant_batch_matmul_v2/op_kernel/arch35/catlass/pipeline/pipeline_state.h",
+      "language": "cpp",
+      "startLine": 26,
+      "endLine": 59,
+      "visibility": null,
+      "isExported": false,
+      "isAsync": false,
+      "isStatic": false
+    },
+    {
+      "id": "struct:5869c734da2955a85b0e8980707c7d75",
+      "kind": "struct",
+      "name": "PipelineStageMixCore",
+      "qualifiedName": "PipelineStageMixCore",
+      "filePath": "mc2/3rd/weight_quant_batch_matmul_v2/op_kernel/arch35/catlass/pipeline/pipeline_stage_mixcore.h",
+      "language": "cpp",
+      "startLine": 42,
+      "endLine": 93,
+      "visibility": null,
+      "isExported": false,
+      "isAsync": false,
+      "isStatic": false
+    }
+  ],
+  "nodes": [
+    {
+      "id": "function:e9a9f103633d7a6e05249127abe23e12",
+      "kind": "function",
+      "name": "FlashAttention",
+      "qualifiedName": "FlashAttention",
+      "filePath": "attention/common/op_kernel/arch35/fia_kernel_noquant_gqa.h",
+      "language": "cpp",
+      "startLine": 397,
+      "endLine": 443,
+      "visibility": null,
+      "isExported": false,
+      "isAsync": false,
+      "isStatic": false
+    },
+    {
+      "id": "struct:57bb362e8ca9938c80e625baf9976a74",
+      "kind": "struct",
+      "name": "PipelineState",
+      "qualifiedName": "PipelineState",
+      "filePath": "mc2/3rd/weight_quant_batch_matmul_v2/op_kernel/arch35/catlass/pipeline/pipeline_state.h",
+      "language": "cpp",
+      "startLine": 26,
+      "endLine": 59,
+      "visibility": null,
+      "isExported": false,
+      "isAsync": false,
+      "isStatic": false
+    },
+    {
+      "id": "struct:5869c734da2955a85b0e8980707c7d75",
+      "kind": "struct",
+      "name": "PipelineStageMixCore",
+      "qualifiedName": "PipelineStageMixCore",
+      "filePath": "mc2/3rd/weight_quant_batch_matmul_v2/op_kernel/arch35/catlass/pipeline/pipeline_stage_mixcore.h",
+      "language": "cpp",
+      "startLine": 42,
+      "endLine": 93,
+      "visibility": null,
+      "isExported": false,
+      "isAsync": false,
+      "isStatic": false
+    },
+    {
+      "id": "function:13288fc12b4adeb95e42f549388adb27",
+      "kind": "function",
+      "name": "ClacS1OutSplitLoopTimes",
+      "qualifiedName": "ClacS1OutSplitLoopTimes",
+      "filePath": "attention/common/op_kernel/arch35/fia_kernel_noquant_gqa.h",
+      "language": "cpp",
+      "startLine": 363,
+      "endLine": 376,
+      "visibility": null,
+      "isExported": false,
+      "isAsync": false,
+      "isStatic": false
+    },
+    {
+      "id": "function:557d02c0eb05395c46c8ed18f92eb400",
+      "kind": "function",
+      "name": "ShouldDispatchTask",
+      "qualifiedName": "ShouldDispatchTask",
+      "filePath": "attention/common/op_kernel/arch35/fia_kernel_noquant_gqa.h",
+      "language": "cpp",
+      "startLine": 446,
+      "endLine": 452,
+      "visibility": null,
+      "isExported": false,
+      "isAsync": false,
+      "isStatic": false
+    }
+  ],
+  "edges": [
+    {
+      "source": "function:e9a9f103633d7a6e05249127abe23e12",
+      "target": "function:13288fc12b4adeb95e42f549388adb27",
+      "kind": "calls",
+      "line": 411,
+      "column": 12
+    },
+    {
+      "source": "function:e9a9f103633d7a6e05249127abe23e12",
+      "target": "function:557d02c0eb05395c46c8ed18f92eb400",
+      "kind": "calls",
+      "line": 418,
+      "column": 33
+    }
+  ],
+  "codeBlocks": [],
+  "relatedFiles": [
+    "attention/common/op_kernel/arch35/fia_kernel_noquant_gqa.h",
+    "mc2/3rd/weight_quant_batch_matmul_v2/op_kernel/arch35/catlass/pipeline/pipeline_stage_mixcore.h",
+    "mc2/3rd/weight_quant_batch_matmul_v2/op_kernel/arch35/catlass/pipeline/pipeline_state.h"
+  ],
+  "stats": {
+    "nodeCount": 5,
+    "edgeCount": 2,
+    "fileCount": 3,
+    "codeBlockCount": 0,
+    "totalCodeSize": 0
+  }
+}

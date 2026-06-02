@@ -1,0 +1,11 @@
+{
+  "symbol": "FlashAttentionScore",
+  "callees": [
+    {
+      "name": "FakeArray",
+      "kind": "function",
+      "filePath": "attention/flash_attention_score/op_api/flash_attention_score.cpp",
+      "startLine": 17
+    }
+  ]
+}

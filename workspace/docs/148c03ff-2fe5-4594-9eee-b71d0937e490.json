@@ -1,0 +1,209 @@
+{
+  "id": "148c03ff-2fe5-4594-9eee-b71d0937e490",
+  "type": "pdf",
+  "path": "/Users/justbin/Desktop/CannEx/raw/docs/CANN社区版 9.1.0-beta1 日志参考 01.pdf",
+  "doc_name": "CANN社区版 9.1.0-beta1 日志参考 01.pdf",
+  "doc_description": "该文档是华为CANN社区版9.1.0-beta1的《日志参考》手册，系统阐述了Ascend EP、Ascend RC及Control CPU开放形态下的日志分类、存储路径、查看方法、级别设置、配置管理、trace机制及常见问题排查，涵盖应用类与系统类日志的全生命周期操作指南。",
+  "page_count": 26,
+  "structure": [
+    {
+      "title": "Preface",
+      "node_id": "0000",
+      "start_index": 1,
+      "end_index": 4,
+      "summary": "该部分文档为华为CANN社区版9.1.0-beta1的《日志参考》手册，主要涵盖日志相关的使用与管理内容。核心要点包括：日志简介、在Ascend EP、Ascend RC及Control CPU开放形态下查看日志的方法、日志级别设置、日志进程重启、日志配置文件查看、trace日志查看，以及常见问题解答（如日志未正常落盘、时区修改后时间戳异常、未设置环境变量却仍有日志输出等）。文档同时包含版权信息、商标声明、安全声明及相关华为政策链接（如产品生命周期、漏洞处理流程、初始证书权责说明、EULA协议和产品资料生命周期策略）。"
+    },
+    {
+      "title": "日志简介",
+      "node_id": "0001",
+      "start_index": 5,
+      "end_index": 6,
+      "summary": "该部分文档主要介绍了日志的基本概念、分类、用途及记录格式。首先说明日志用于记录系统运行过程和异常信息，辅助问题定位与程序调试。接着将日志分为系统类日志（包括Control CPU和非Control CPU产生的日志）和应用类日志（Host侧和Device侧AI应用相关组件产生的日志），并解释了日志文件名中id和pid的含义。此外，文档还介绍了trace日志的特殊机制——维测信息先存于内存，出错或进程结束时再落盘以避免影响性能。最后，通过示例详细说明了日志的标准格式，并对各字段（如日志级别、模块名、进程ID、时间戳、文件名行号及日志内容）进行了定义和解释。"
+    },
+    {
+      "title": "查看日志（ Ascend EP ）",
+      "node_id": "0002",
+      "start_index": 7,
+      "end_index": 9,
+      "summary": "该部分文档主要介绍了在 Ascend EP 形态下日志的查看方法，重点涵盖应用类日志和系统类日志的存储路径、内容说明及相关配置。应用类日志默认存储于 $HOME/ascend/log 目录下，按 debug、run 和 security 三类划分，并区分 Host 侧和 Device 侧的日志文件结构与用途；文档详细说明了日志回传机制、老化策略、容器环境下的使用限制及关键环境变量（如 ASCEND_PROCESS_LOG_PATH、ASCEND_LOG_DEVICE_FLUSH_TIMEOUT 等）的配置方式。此外，还简要描述了系统类日志的查看方式，指出需通过 msnpureport 工具从 Device 侧导出至 Host 侧，并强调容器内不支持该操作。文档同时提醒用户注意磁盘空间管理及在写入受限存储介质上的日志处理建议。"
+    },
+    {
+      "title": "查看日志（ Ascend RC ）",
+      "node_id": "0003",
+      "start_index": 10,
+      "end_index": 11,
+      "summary": "该部分文档主要介绍了在 Ascend RC 形态下日志文件的存储路径及其内容分类。文档说明了日志支持老化机制，当日志超出配置的存储限制时，系统会自动删除最早的日志目录或文件，并指出具体的老化策略（如数量、大小）需参考日志配置文件。随后通过表格详细列出了不同类别日志（调试日志、运行日志、安全日志、维测日志等）的存储路径及对应记录的信息来源，包括系统进程和应用进程在 Control CPU 和非 Control CPU 上生成的日志。此外，文档还解释了路径中“id”和“pid”分别代表设备 ID 和进程 ID，“*”表示时间戳，并特别说明了 slogdlog 维测日志的老化处理方式（达到 1MB 后重命名为 slogdlog.old 并管理备份）。"
+    },
+    {
+      "title": "查看日志（ Control CPU 开放形态）",
+      "node_id": "0004",
+      "start_index": 12,
+      "end_index": 13,
+      "summary": "该部分文档主要介绍了在 Control CPU 开放形态下日志文件的存储路径、分类及管理策略。内容包括：应用类日志（debug、run、security）的存储结构、老化机制（默认保留24个 device-app-pid 目录，系统每15秒扫描一次并自动删除超限的最早目录）、并发进程限制（最多支持24个应用进程，超出可能导致日志丢失）；详细列出了各类日志的存储路径及其记录的信息类型，如应用进程和系统进程产生的调试、运行、安全日志，以及维测日志（slogdlog）的轮转备份机制；同时说明了部分系统日志需通过 Host 侧的 msnpureport 工具导出查看，并解释了路径中“id”“pid”分别代表 Device ID 和进程 ID，“*”代表时间戳。"
+    },
+    {
+      "title": "设置日志级别",
+      "node_id": "0005",
+      "start_index": 14,
+      "end_index": 15,
+      "summary": "该部分文档主要介绍了日志级别设置的相关内容，包括日志的作用、日志级别的分类及其定义（DEBUG、INFO、WARNING、ERROR 和 NULL），以及不同日志类型（调试日志、安全日志、运行日志）的默认级别和是否支持调整。文档还详细说明了如何通过环境变量（如 ASCEND_GLOBAL_LOG_LEVEL、ASCEND_MODULE_LOG_LEVEL 和 ASCEND_GLOBAL_EVENT_ENABLE）设置应用类日志级别，并介绍了在不同系统形态（Ascend EP 和 Ascend RC）下设置系统类日志级别的方法，包括使用 msnpureport 工具或修改 /etc/slog.conf 配置文件，并指出配置生效需重启 slogd 进程。"
+    },
+    {
+      "title": "重启日志进程",
+      "node_id": "0006",
+      "start_index": 16,
+      "end_index": 17,
+      "summary": "该部分文档主要介绍了在修改Device侧日志配置文件后，如何重启日志进程以使配置生效。内容包括：用户需具备Device侧登录权限；系统类日志和应用类日志在重启后不同的写入行为；针对Control CPU开放形态和Ascend RC形态，分别说明了停止日志进程（使用kill -15，必要时使用kill -9）和自动重启的步骤；建议通过ps命令验证重启是否成功；并提供了重启失败时的异常处理方法，如检查/var目录磁盘使用率过高问题，并指导手动清理旧日志文件以恢复进程启动。"
+    },
+    {
+      "title": "查看日志配置文件",
+      "node_id": "0007",
+      "start_index": 18,
+      "end_index": 20,
+      "summary": "该部分文档主要介绍了华为Ascend设备侧日志配置文件（slog.conf）的相关内容，包括其作用、存储路径、修改权限及注意事项。重点说明了配置文件中各项参数的含义和取值范围，涵盖全局日志级别（global_level）、模块日志级别（如SLOG、DVPP、TS等）、Event日志开关（enableEvent），以及各类日志文件的数量（MaxFileNum）、单个文件大小（MaxFileSize）、缓冲区大小（SysLogBufSize、AppLogBufSize）、日志存储路径（logAgentFileDir）和跨用户日志写入权限（permission_for_all）等配置项。文档强调修改配置需遵循规范，否则可能导致系统异常，并指出修改后需重启slogd进程使配置生效。同时说明在Ascend EP标准形态下，Host侧无日志配置文件，且普通用户无权登录Device侧修改配置。"
+    },
+    {
+      "title": "查看trace日志",
+      "node_id": "0008",
+      "start_index": 21,
+      "end_index": 23,
+      "summary": "该部分文档主要介绍了Ascend EP标准形态下trace日志的机制、存储路径、文件类型及管理方法。核心内容包括：trace日志通过内存暂存并在程序出错或退出时落盘，以减少运行时性能开销；默认落盘路径为$HOME/ascend/atrace/，可通过ASCEND_WORK_PATH环境变量自定义；详细说明了不同事件类型（schedule、stackcore、exit）对应的日志目录结构和文件命名规则；列举了各类trace日志文件（如schedule_tracer_*.txt/.bin、stackcore_tracer_*.txt）的内容与用途，并指出部分二进制日志需使用asys工具解析；介绍了通过ASCEND_LOG_DEVICE_FLUSH_TIMEOUT和ASCEND_TRACE_RECORD_NUM等环境变量配置日志回传延迟和老化策略；强调了日志目录为多应用共享，需定期清理以防磁盘空间不足；最后在FAQ中提供了日志未正常落盘问题的排查步骤，包括检查磁盘空间和系统日志。"
+    },
+    {
+      "title": "FAQ",
+      "node_id": "0009",
+      "start_index": 23,
+      "end_index": 23,
+      "summary": "该部分文档主要围绕日志相关问题的常见故障排查（FAQ）展开，重点涵盖以下内容：  \n1. **日志未正常落盘**：包括Ascend EP标准形态下使用msnpureport工具导出Device侧系统日志失败的处理步骤，以及应用类日志（如$HOME/ascend/log/目录下的plog和device-id日志）未落盘的排查方法。  \n2. **时区修改后日志时间戳错误**：指出修改环境时区可能导致日志时间显示不正确的问题。  \n3. **未设置日志环境变量但仍有日志输出**：说明即使未显式配置日志打印环境变量，屏幕上仍可能显示日志的现象。  \n文档提供了具体的诊断命令（如df -h、cat /var/log/messages或syslog）和分步操作指引，并建议在无法解决时联系技术支持。",
+      "nodes": [
+        {
+          "title": "日志没有正常落盘",
+          "node_id": "0010",
+          "start_index": 23,
+          "end_index": 25,
+          "summary": "该部分文档属于FAQ章节，主要围绕日志相关问题提供排查与解决指导。核心内容包括三类常见问题：（1）日志未正常落盘，针对Ascend EP标准形态、Control CPU开放形态和Ascend RC形态分别给出了应用类和系统类日志的详细排查步骤，涉及磁盘空间检查、日志进程状态验证、动态库依赖确认及使用msnpureport工具导出设备侧日志等；（2）修改系统时区后日志时间戳不正确，指出可能原因为AI任务启动后更改时区，并建议通过重启AI任务解决；（3）未设置日志环境变量但仍有日志输出的问题虽被列出，但未展开说明。整体以分步骤故障排查流程为主，强调磁盘空间、日志服务进程（如slogd、sklogd）状态及技术支持路径。"
+        },
+        {
+          "title": "修改环境时区后，日志打印的时间戳不正确",
+          "node_id": "0011",
+          "start_index": 25,
+          "end_index": 26,
+          "summary": "该部分文档主要涵盖华为Atlas推理产品（如Atlas 200I/500 A2）在使用CANN社区版时与日志记录相关的常见问题及处理方法。主要内容包括：  \n1. **应用类日志未正常落盘的排查步骤**：依次检查应用进程依赖的动态库、日志存储路径磁盘空间是否已满、slogd日志进程是否存在，并提供在进程缺失或问题持续时联系技术支持或重启日志进程的建议。  \n2. **系统类日志未正常落盘的处理流程**：检查slogd和sklogd等日志相关进程是否存在、磁盘空间是否充足，若均正常仍无日志落盘，则参考重启日志进程的方法。  \n3. **修改系统时区后日志时间戳不正确的问题**：说明可能原因为AI任务启动后更改时区，并提供两种解决方法——重启AI任务或重新设置系统时区。  \n4. **未设置日志打印环境变量却仍有屏幕日志输出的现象**：解释原因是日志模块在无法与slogd进程建立Socket连接时会回退到标准输出，并指出常见原因为系统打开文件数超限，提供通过ulimit和lsof命令诊断并调整文件描述符限制的解决方案。"
+        },
+        {
+          "title": "未设置日志打印环境变量，但是在屏幕上仍有日志显示",
+          "node_id": "0012",
+          "start_index": 26,
+          "end_index": 26,
+          "summary": "该部分文档主要涵盖两个主题：一是通过timedatectl命令查看和修改系统时区的方法，以Asia/Shanghai为例说明具体操作；二是解释在未设置ASCEND_SLOG_PRINT_TO_STDOUT环境变量的情况下屏幕仍显示日志的原因及解决方法，指出日志因Socket连接slogd进程失败而回退到屏幕输出，并建议通过ulimit和lsof命令检查和调整系统打开文件数量限制以解决问题。"
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "page": 1,
+      "content": "CANN社区版\n9.1.0-beta1\n日志参考\n文档版本 01\n发布日期 2026-05-20\n华为技术有限公司"
+    },
+    {
+      "page": 2,
+      "content": " \n \n版权所有  © 华为技术有限公司  2026。 保留一切权利。\n非经本公司书面许可，任何单位和个人不得擅自摘抄、复制本文档内容的部分或全部，并不得以任何形式传\n播。\n \n商标声明\n和其他华为商标均为华为技术有限公司的商标。\n本文档提及的其他所有商标或注册商标，由各自的所有人拥有。\n \n注意\n您购买的产品、服务或特性等应受华为公司商业合同和条款的约束，本文档中描述的全部或部分产品、服务或\n特性可能不在您的购买或使用范围之内。除非合同另有约定，华为公司对本文档内容不做任何明示或暗示的声\n明或保证。\n由于产品版本升级或其他原因，本文档内容会不定期进行更新。除非另有约定，本文档仅作为使用指导，本文\n档中的所有陈述、信息和建议不构成任何明示或暗示的担保。\n  \n \n \n \n \n \n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 i"
+    },
+    {
+      "page": 3,
+      "content": " \n \n安全声明\n \n产品生命周期政策\n华为公司对产品生命周期的规定以“产品生命周期终止政策”为准，该政策的详细内容请参见如下网址：\nhttps://support.huawei.com/ecolumnsweb/zh/warranty-policy\n \n漏洞处理流程\n华为公司对产品漏洞管理的规定以“漏洞处理流程”为准，该流程的详细内容请参见如下网址：\nhttps://www.huawei.com/cn/psirt/vul-response-process\n如企业客户须获取漏洞信息，请参见如下网址：\nhttps://securitybulletin.huawei.com/enterprise/cn/security-advisory\n \n华为初始证书权责说明\n华为公司对随设备出厂的初始数字证书，发布了“华为设备初始数字证书权责说明”，该说明的详细内容请参\n见如下网址：\nhttps://support.huawei.com/enterprise/zh/bulletins-service/ENEWS2000015766\n \n华为企业业务最终用户许可协议 (EULA)\n本最终用户许可协议是最终用户（个人、公司或其他任何实体）与华为公司就华为软件的使用所缔结的协议。\n最终用户对华为软件的使用受本协议约束，该协议的详细内容请参见如下网址：\nhttps://e.huawei.com/cn/about/eula\n \n产品资料生命周期策略\n华为公司针对随产品版本发布的售后客户资料（产品资料），发布了“产品资料生命周期策略”，该策略的详\n细内容请参见如下网址：\nhttps://support.huawei.com/enterprise/zh/bulletins-website/ENEWS2000017760\n \n \n \n \n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 ii"
+    },
+    {
+      "page": 4,
+      "content": "目 录\n1 日志简介 ......................................................................................................................................1\n2 查看日志（ Ascend EP ）........................................................................................................... 3\n3 查看日志（ Ascend RC ）...........................................................................................................6\n4 查看日志（ Control CPU 开放形态） .......................................................................................8\n5 设置日志级别 ............................................................................................................................10\n6 重启日志进程 ............................................................................................................................12\n7 查看日志配置文件 .................................................................................................................... 14\n8 查看trace日志........................................................................................................................ 17\n9 FAQ........................................................................................................................................... 19\n9.1 日志没有正常落盘 ..................................................................................................................................................................19\n9.2 修改环境时区后，日志打印的时间戳不正确 .................................................................................................................. 21\n9.3 未设置日志打印环境变量，但是在屏幕上仍有日志显示 ............................................................................................ 22CANN社区版\n日志参考 目 录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 iii"
+    },
+    {
+      "page": 5,
+      "content": "1 日志简介\n日志分类\n日志主要用于记录系统的运行过程及异常信息，帮助用户快速定位系统运行过程中出\n现的问题以及开发过程中的程序调试问题。日志分为如下几类：\n●系统类日志 ：系统运行时在 Device侧产生的日志。主要包括：\n– Control CPU 上的系统类日志，包括内核态日志和系统进程运行产生的用户态\n日志，主要反映 AI处理器的整体运行情况。\n–非Control CPU （例如低功耗）上的系统类日志，主要反映低功耗、 Task\nScheduler 、ISP等组件的运行情况。\n●应用类日志 ：AI应用程序运行产生的日志。主要包括：\n– Host 侧AscendCL 、GE、Runtime 、HCCL等组件打印的日志。\n– Device 侧AI CPU进程打印的日志。\n本文中出现的日志文件名中的 id和pid分别代表 Device ID 和业务进程 ID，请以实际为\n准。\n程序运行过程中，还会将软件栈的维测信息记录在内存中，当程序运行出错或进程结\n束时落盘到文件，以免在程序运行过程中频繁产生和记录日志文件，影响性能，这部\n分信息保存在 trace日志中， trace日志的产生机制比较独立，详细请参见 8 查看trace日\n志。\n日志记录格式\n日志样例如下：\n[ERROR] TEFUSION(12940,atc):2021-10-17-05:54:07.599.074 [tensor_engine/te_fusion/\npywrapper.cc:33]InitPyLogger Failed to import te.platform.log_util\n日志格式如下：\n[Level] ModuleName(PID,PName):DateTimeMS [FileName:LineNumber]LogContentCANN社区版\n日志参考 1 日志简介\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 1"
+    },
+    {
+      "page": 6,
+      "content": "表1-1 日志字段说明\n字段 说明\nLevel 日志级别，包括以下几种：\nERROR、WARNING 、INFO、DEBUG。\nModuleName 产生日志的模块的名称。\nPID 模块进程 ID。\nPName 模块进程名称。\nDateTimeMS 日志打印时间，格式为：\nyyyy-mm-dd-hh:mm:ss.fff.zzz （年-月-日-时:分:秒:毫秒:\n微秒）。\nFileName:LineNumber 调用日志打印接口的文件及对应的行号。\nLogContent 各模块具体的日志内容。CANN社区版\n日志参考 1 日志简介\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 2"
+    },
+    {
+      "page": 7,
+      "content": "2 查看日志（ Ascend EP ）\n本节介绍 Ascend EP 形态下，日志文件存储路径以及各日志文件记录的主要信息。\n查看应用类日志\n应用类日志用于记录运行应用程序产生的日志，例如 AscendCL 应用程序运行完成后，\n默认可在“ $HOME/ascend/log ”下查看应用类日志。\n应用类日志相关说明如下：\n●应用类日志支持在容器内或物理机内查看。为保证日志工具在容器内正常运行，\n需要将日志工具动态库文件 libascendalog.so 及其依赖的 libc_sec.so 所在路径映射\n到容器内。所在路径分别为“ ${INSTALL_DIR}/compiler/lib64/\nlibascendalog.so ”和“ ${INSTALL_DIR}/driver/lib64/common/libc_sec.so ”。\n${INSTALL_DIR} 请替换为 CANN软件安装后文件存储路径。以 root用户安装为\n例，安装后文件默认存储路径为： /usr/local/Ascend/cann 。\n● Device 侧应用类日志会自动回传到 Host侧，若回传失败，则会在 Device侧直接落\n盘；若回传成功，则不会在 Device侧落盘。\n●应用类日志支持老化，如果日志文件数量或大小超限，将会自动删除最早的日志\n目录或文件。\n├── debug\n│   ├── device-0\n│   │   ├── device-2272_20220617234019449.log\n│   │   └── device-6564_20220617232348429.log\n│   └── plog\n│       └── plog-16027_20220618001623878.log\n├── run\n│   ├── device-0\n│   │   ├── device-2272_20220617234019449.log\n│   │   └── device-6564_20220617232348429.log\n│   └── plog\n│       └── plog-16027_20220618001623878.log\n└── security\n    ├── device-0\n    │   ├── device-2272_20220617234019449.log\n    │   └── device-6564_20220617232348429.log\n    └── plog\n        └── plog-16027_20220618001623878.logCANN社区版\n日志参考 2 查看日志（ Ascend EP ）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 3"
+    },
+    {
+      "page": 8,
+      "content": "表2-1 应用类日志介绍\n存储路径 说明\n$HOME/ascend/log/debug/\ndevice- id/device- pid_*.log在Device侧运行应用程序产生的调试日志。主要包括\nDevice侧AI CPU、HCCP等模块的日志。\n$HOME/ascend/log/debug/\nplog/plog- pid_*.log在Host侧运行应用程序产生的调试日志。\n主要包括 compiler 中各组件（如 GE、FE、AI CPU、\nTBE、HCCL等）、 runtime中各组件（如\nAscendCL 、GE、Runtime 等）和 Driver用户态日\n志。\n$HOME/ascend/log/run/\ndevice- id/device- pid_*.log在Device侧运行应用程序产生的运行日志。\n$HOME/ascend/log/run/\nplog/plog- pid_*.log在Host侧运行应用程序产生的运行日志。\n$HOME/ascend/log/\nsecurity/device- id/device-\npid_*.log在Device侧运行应用程序产生的安全日志。\n$HOME/ascend/log/\nsecurity/plog/plog- pid_*.log在Host侧运行应用程序产生的安全日志。\n \n注1：上述日志中 id和pid分别代表 Device ID 和业务进程 ID，请以实际为准；日志文件\n中的“ *”表示该日志文件创建时的时间戳。\n注2：以上目录是容器或物理机内所有应用程序共同使用的，会不断增加新的应用进\n程，日志会不断增多，因此需要用户定期清理该目录（可以使用系统自带的 logrotate\n实现日志切分），否则可能导致磁盘空间不足，影响业务正常运行。\n注3：如果存储在只有 emmc/flash 等有写次数限制的介质下，建议将日志落盘路径设\n置到内存文件系统路径下，启动业务进程时通过环境变量\nASCEND_PROCESS_LOG_PATH 设置日志落盘路径，可以另起一个常驻进程定时定量\n将内存文件系统下的日志转储在 emmc/flash 。\n注4：在容器内，目录中的 device- id为逻辑 ID。\n其他相关配置：\n●修改应用类日志落盘路径 ：可以使用环境变量 ASCEND_PROCESS_LOG_PATH 指\n定日志落盘路径；若开发者期望编译运行过程中产生的文件落盘到归一路径，可\n通过ASCEND_WORK_PATH 设置单机独享文件的存储路径。\n●设置Device侧应用类日志回传延时 ：Ascend EP 标准形态下， Device侧的slogd进\n程会将 Device侧应用类日志自动回传到 Host侧，使用户在 Host侧可以直接查看\nDevice侧的应用类日志。在业务进程退出前，系统有 2000ms的默认延时将 Device\n侧应用类日志回传到 Host侧，超时后业务进程退出。未回传到 Host侧的日志直接\n在Device侧落盘。可以通过环境变量 ASCEND_LOG_DEVICE_FLUSH_TIMEOUT 设\n置更高的 Device侧应用类日志回传到 Host侧的延时时间。\n●设置应用类日志目录（ plog和device- id）下存储每个进程日志文件的数量 ：plog\n和device- id日志目录下能够存储的单个进程回传的日志文件数量，默认为 10个，\n该数量可以通过环境变量 ASCEND_HOST_LOG_FILE_NUM 进行设置。CANN社区版\n日志参考 2 查看日志（ Ascend EP ）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 4"
+    },
+    {
+      "page": 9,
+      "content": "●指定日志拥塞处理方式 ：在日志拥塞或 IO访问性能差的情况下，为保证业务性能\n不劣化，系统可能会丢失日志。为便于问题定位，用户可通过\nASCEND_LOG_SYNC_SAVE 配置在日志拥塞或 IO访问性能差的情况下，不丢失日\n志。\n●设置日志展示方式 ：日志的默认输出方式为将日志保存在 log文件中，如果需要打\n印日志，可以配置环境变量 ASCEND_SLOG_PRINT_TO_STDOUT 。开启日志打印\n功能后，也可以在启动应用进程时，通过输出重定向方式将日志保存到指定文件\n中。例如： ./main > log.txt\n查看系统类日志\n系统类日志用于记录系统运行信息， Ascend EP 标准形态下，用户没有 Device的登录权\n限，因此需要通过 msnpureport 工具将 Device侧的系统类日志传输到 Host侧进行查\n看，具体请参考《 msnpureport 工具使用指南 》。\n系统类日志相关说明如下：\n●容器内不支持查看 Device侧系统类日志，也不支持通过 msnpureport 工具导出\nDevice侧系统类日志。\n●系统类日志支持老化，如果日志文件数量或大小超限，将会自动删除最早的日志\n目录或文件。CANN社区版\n日志参考 2 查看日志（ Ascend EP ）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 5"
+    },
+    {
+      "page": 10,
+      "content": "3 查看日志（ Ascend RC ）\n本节介绍 Ascend RC 形态下，日志文件存储路径以及各日志文件记录的主要信息。\n日志支持老化，如果日志超过配置的存储限制，将会自动删除最早的日志目录或文\n件。日志目录或文件数量、单个日志文件的大小具体请参见 日志配置文件 。\n表3-1 日志文件介绍\n存储路径 说明\n/var/log/npu/slog/debug/device-os/\ndevice-os_*.logControl CPU 上系统进程产生的调试日\n志，包括用户态日志和内核态日志。\n/var/log/npu/slog/debug/device-app-\npid/device-app- pid_*.logControl CPU 上应用进程产生的调试日\n志。\n/var/log/npu/slog/run/event/\nevent_*.logControl CPU 上系统进程产生的 EVENT日\n志。\n/var/log/npu/slog/run/device-os/\ndevice-os_*.logControl CPU 上系统进程产生的运行日\n志。\n/var/log/npu/slog/run/device-app- pid/\ndevice-app- pid_*.logControl CPU 上应用进程产生的运行日\n志。\n/var/log/npu/slog/security/device-os/\ndevice-os_*.logControl CPU 上系统进程产生的安全日\n志。\n/var/log/npu/slog/security/device-app-\npid/device-app- pid_*.logControl CPU 上应用进程产生的安全日\n志。\n/var/log/npu/slog/debug/device- id/\ndevice- id_*.log非Control CPU 上的系统类日志，主要采\n集以下模块的日志：\n● TS\n● TSDUMP\n● LPCANN社区版\n日志参考 3 查看日志（ Ascend RC ）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 6"
+    },
+    {
+      "page": 11,
+      "content": "存储路径 说明\n/var/log/npu/slog/slogd/slogdlog 维测日志。记录日志工具自身的运行信\n息，用于日志工具自身问题定位。\n日志具备老化策略，当 slogdlog 文件达到\n规定大小（ 1MB）后，名称变更为\nslogdlog.old 进行备份（如果已有备份文\n件，则删除最早的备份文件）。\n \n注：上述日志中 id和pid分别代表 Device ID 和进程 ID，请以实际为准；日志文件中的\n“*”表示该日志文件创建时的时间戳。CANN社区版\n日志参考 3 查看日志（ Ascend RC ）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 7"
+    },
+    {
+      "page": 12,
+      "content": "4 查看日志（ Control CPU 开放形态）\n本节介绍 Control CPU 开放形态下，日志文件存储路径以及各日志文件记录的主要信\n息。\n日志相关说明如下：\n●应用类日志支持老化，默认每个类型日志（ debug、run、security）分别支持存\n储24个device-app- pid目录，系统每隔 15秒对该目录进行一次扫描，如果日志超\n过配置的存储限制，将会自动删除最早的 device-app- pid目录。\n存储device-app- pid目录的数量配置以及每个 device-app- pid目录存储的日志文件\n的数量和单个日志文件的大小具体请参见 日志配置文件 。\n●最多支持 24个应用进程并发处理，如果超过该数值，可能会导致日志丢失。\n表4-1 日志文件介绍\n存储路径 说明\n/var/log/npu/slog/debug/device-app-\npid/device-app- pid_*.logControl CPU 上应用进程产生的调试日\n志。\n/var/log/npu/slog/run/device-app- pid/\ndevice-app- pid_*.logControl CPU 上应用进程产生的运行日\n志。\n/var/log/npu/slog/security/device-app-\npid/device-app- pid_*.logControl CPU 上应用进程产生的安全日\n志。\n/var/log/npu/slog/slogd/slogdlog 维测日志。记录日志工具自身的运行信\n息，用于日志工具自身问题定位。\n日志具备老化策略，当 slogdlog 文件达到\n规定大小（ 1MB）后，名称变更为\nslogdlog.old 进行备份（如果已有备份文\n件，则删除最早的备份文件）。\n以下文件需要登录 Host侧服务器，使用 msnpureport 工具导出并查看，具体使用方\n法请参考《 msnpureport 工具使用指南 》。\n/var/log/npu/slog/debug/device-os/\ndevice-os_*.logControl CPU 上系统进程产生的调试日\n志，包括用户态日志和内核态日志。CANN社区版\n日志参考 4 查看日志（ Control CPU 开放形态）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 8"
+    },
+    {
+      "page": 13,
+      "content": "存储路径 说明\n/var/log/npu/slog/run/event/\nevent_*.logControl CPU 上系统进程产生的 EVENT日\n志。\n/var/log/npu/slog/run/device-os/\ndevice-os_*.logControl CPU 上系统进程产生的运行日\n志。\n/var/log/npu/slog/security/device-os/\ndevice-os_*.logControl CPU 上系统进程产生的安全日\n志。\n/var/log/npu/slog/debug/device- id/\ndevice- id_*.log非Control CPU 上的系统类日志，主要采\n集TS、TSDUMP 、LP等模块的日志。\n \n上述日志中 id和pid分别代表 Device ID 和进程 ID，请以实际为准；日志文件中的“ *”\n表示该日志文件创建时的时间戳。CANN社区版\n日志参考 4 查看日志（ Control CPU 开放形态）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 9"
+    },
+    {
+      "page": 14,
+      "content": "5 设置日志级别\n简介\n日志记录了运行环境的运行情况和功能流程的处理情况，是维护人员查看系统状态、\n进行问题定位的重要工具和手段。日志模块根据系统设置的日志级别，记录不同详细\n程度的内容，满足不同系统维护需求。\n日志级别等级由低到高顺序： DEBUG < INFO < WARNING < ERROR ，级别越低，输\n出日志越详细。\n表5-1 日志级别简介\n日志级别 定义\n0：DEBUG 调试级别。该级别的日志记录了调试信息，便于开发人员\n或维护人员定位问题。\n1：INFO 正常级别。记录系统正常运行的信息。\n2：WARNING 警告级别。记录系统和预期的状态不一致，但不影响整个\n系统运行的信息。\n3：ERROR 一般错误级别。该级别的日志记录了如下错误：\n●非预期的数据或者事件。\n●影响面较大且模块内部能够处理的错误。\n●限制在模块内的错误。\n●对其他模块有轻微影响的错误，例如统计任务创建失\n败。\n●引起调用失败的错误。\n●在业务逻辑错误的情况下记录错误状态的信息及造成错\n误的可能原因。\n4：NULL NULL级别。不输出日志。\n \n调试日志默认为 ERROR级别，且支持调整日志级别；安全日志默认为 DEBUG级别，运\n行日志默认为 INFO级别，且均不支持调整日志级别。CANN社区版\n日志参考 5 设置日志级别\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 10"
+    },
+    {
+      "page": 15,
+      "content": "下面介绍设置日志级别的具体方法。\n设置应用类日志级别\n●通过ASCEND_GLOBAL_LOG_LEVEL 设置全局日志级别：\nexport ASCEND_GLOBAL_LOG_LEVEL=1\n●通过ASCEND_MODULE_LOG_LEVEL 设置模块日志级别：\nexport ASCEND_MODULE_LOG_LEVEL=TDT=0:DRV=0\n●通过ASCEND_GLOBAL_EVENT_ENABLE 设置是否开启 Event日志：\nexport ASCEND_GLOBAL_EVENT_ENABLE=0\n设置系统类日志级别\nAscend EP 形态，通过 msnpureport 工具设置，具体方法请参见《 msnpureport 工具\n使用指南 》。\nAscend RC 形态，对于 Atlas 200I/500 A2 推理产品，通过 /etc/slog.conf 配置文件设置\n全局日志级别、模块日志级别和是否开启 Event日志，具体请参见 7 查看日志配置文\n件，设置后需重启 slogd进程使配置生效，具体请参见 6 重启日志进程 。CANN社区版\n日志参考 5 设置日志级别\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 11"
+    },
+    {
+      "page": 16,
+      "content": "6 重启日志进程\n修改Device侧日志配置文件后，需要重启日志进程使配置生效。用户需要有登录\nDevice侧的权限，才能重启 Device侧的日志进程。\n进程重启后，系统类日志会判断上一个日志文件的容量是否达到上限，若未达到上\n限，则新生成的系统日志继续写入上一个日志文件内；应用类日志生成的日志信息会\n写入一个全新的日志文件里（即使之前的日志文件大小未达到限定的值）。\nControl CPU 开放形态\n步骤1执行如下命令停止日志进程。\nkill -15  进程ID\n其中，进程（ slogd、sklogd或log-daemon ）ID可以通过 ps -elf | grep log 命令查\n询。\n请使用 kill -15停止slogd进程，这样 slogd进程接收到结束信号时，会清理共享内存。\n如果kill -15反复执行失败，请使用 kill -9强制停止日志进程。\n步骤2重新启动日志进程。\n日志进程会自动重启，无需手动启动进程。\n一段时间后，建议使用 ps -elf | grep log 命令确认是否重启成功，如果重启失败，您\n可以获取日志后单击 Link联系技术支持。\n----结束\nAscend RC 形态\n步骤1执行如下命令停止日志进程。\nkill -15  进程ID\n其中，进程（ slogd、sklogd或log-daemon ）ID可以通过 ps -elf | grep log 命令查\n询。\n请使用 kill -15停止slogd进程，这样 slogd进程接收到结束信号时，会清理共享内存。\n如果kill -15反复执行失败，请使用 kill -9强制停止日志进程。\n步骤2重启日志进程。CANN社区版\n日志参考 6 重启日志进程\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 12"
+    },
+    {
+      "page": 17,
+      "content": "对于Atlas 200I/500 A2 推理产品，日志进程会自动重启，无需手动启动进程。\n一段时间后，建议使用 ps -elf | grep log 命令确认是否重启成功，如果重启失败，您\n可以获取日志后单击 Link联系技术支持。\n----结束\n重启异常处理\n如果重新启动日志进程失败，可能为 /var目录所在磁盘使用率过高导致，请参考处理：\n进入根目录，运行命令 df -h，如果 /var目录所在磁盘使用率达到 100%导致slogd启动\n失败，则进入“ /var/log/npu/slog ”目录，手动删除一些较大的、时间较早的日志文\n件。删除完成后重新启动日志进程。CANN社区版\n日志参考 6 重启日志进程\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 13"
+    },
+    {
+      "page": 18,
+      "content": "7 查看日志配置文件\n本节介绍 Device侧的日志配置文件。该文件中记录了 Device侧系统类日志的日志级\n别、日志输出路径、日志数量、单个日志文件大小等配置信息。\n对于Ascend EP 标准形态， Host侧没有日志配置文件，且无 Device侧的登录和修改日志\n配置文件的权限。一般情况下无需修改日志配置文件。\n整体配置说明\n●日志配置文件路径，存储在 Device侧如下目录：\n– Atlas 200I/500 A2 推理产品： /etc/slog.conf\n●多用户场景下，仅支持日志进程的运行用户修改配置文件。\n●用户在修改日志配置项时，请严格按照相关配置项说明表格中的要求，根据建议\n值或取值范围进行配置，若不按照配置项配置要求，可能会导致系统异常。\n●手动修改 Device侧配置文件后，需要重启 slogd进程，使配置生效。重启日志进程\n方法请参见 6 重启日志进程 。\nslog.conf 文件配置项说明\n表7-1 slog.conf 文件配置项说明\n配置项 说明\nglobal_level 设置全局日志级别，仅支持调试日志。取值范围：\n● 0：表示 DEBUG级别。\n● 1：表示 INFO级别。\n● 2：表示 WARNING 级别。\n● 3：表示 ERROR级别。\n● 4：表示 NULL级别，不输出日志。\n●其他值：非法值。\nenableEvent 设置是否开启 Event日志。取值范围：\n● 1：开启 Event日志。\n● 0：不开启 Event日志。CANN社区版\n日志参考 7 查看日志配置文件\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 14"
+    },
+    {
+      "page": 19,
+      "content": "配置项 说明\nSLOG、\nIDEDD、\nDVPP……设置Control CPU 上各模块的日志级别。取值范围：\n● 0：表示 DEBUG级别。\n● 1：表示 INFO级别。\n● 2：表示 WARNING 级别。\n● 3：表示 ERROR级别。\n● 4：表示 NULL级别，不输出日志。\n● 5：无效值，模块日志级别取 global_level 设置的级别。\n–模块日志级别为 5，而全局日志级别为正常值（ 0、1、2、\n3），则模块跟随全局日志级别。\n–模块日志级别为 5，而全局日志级别为 4，则模块日志不打\n印。\n–模块日志级别为 5，而全局日志级别为非法值，则模块日志\n级别为 ERROR。\nTS、\nTSDUMP ……设置非 Control CPU 上各模块的日志级别。取值范围：\n● 0：表示 DEBUG级别。\n● 1：表示 INFO级别。\n● 2：表示 WARNING 级别。\n● 3：表示 ERROR级别。\n● 4：表示 NULL级别，不输出日志。\n● 5：无效值，模块日志级别取 global_level 设置的级别。\n–模块日志级别为 5，而全局日志级别为正常值（ 0、1、2、\n3），则模块跟随全局日志级别。\n–模块日志级别为 5，而全局日志级别为 4，则模块日志不打\n印。\n–模块日志级别为 5，而全局日志级别为非法值，则模块日志\n级别为 ERROR。\nDeviceOsMax\nFileNumdebug/device-os 目录下保存 device-os_*.log 日志文件的数量，当日\n志文件数目大于该数目时发生滚动，新日志覆盖最早的日志。\nDeviceOsMax\nFileSizedebug/device-os 目录下单个 device-os_*.log 日志文件的大小，当日\n志文件大小超过该值时，则生成新的日志文件。\n您可以根据实际情况调整大小，如果设置值小于 1MB，系统默认为\n1MB。\nDeviceOsNde\nbugMaxFileN\numrun或security的device-os 目录下保存 device-os_*.log 日志文件的数\n量，当日志文件数目大于该数目时发生滚动，新日志覆盖最早的日\n志。\nDeviceOsNde\nbugMaxFileSiz\nerun或security的device-os 目录下单个 device-os_*.log 日志文件的大\n小，如果日志文件大小超过该最大值，则生成新的日志文件。\n您可以根据实际情况调整大小，如果设置值小于 1MB，系统默认为\n1MB。CANN社区版\n日志参考 7 查看日志配置文件\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 15"
+    },
+    {
+      "page": 20,
+      "content": "配置项 说明\nDeviceMaxFile\nNumdevice- id目录下保存 device- id_*.log日志文件的数量，当日志文件\n数目大于该数目时发生滚动，新日志覆盖最早的日志。\nDeviceMaxFile\nSizedevice- id目录下单个 device- id_*.log日志文件的大小，当日志文件\n大小超过该值时，则生成新的日志文件。\n您可以根据实际情况调整大小，如果设置值小于 1MB，系统默认为\n1MB。\nDeviceAppDir\nNums保存device-app- pid目录的数量。\nDeviceAppMa\nxFileNum每个device-app- pid目录下保存 device-app- pid_*.log日志文件的数\n量，当 device-app- pid_*.log日志文件数目大于该数目时发生滚动，\n新日志覆盖最早的日志。\nDeviceAppMa\nxFileSize每个device-app- pid目录下单个 device-app- pid_*.log日志文件的大\n小，当 device-app- pid_*.log日志文件大小超过该值时，则生成新的\n日志文件。\nSysLogBufSize 系统日志（ device-os_*.log ）缓冲区大小。\nAppLogBufSiz\ne应用类日志（ device-app- pid_*.log）缓冲区大小。\nlogAgentFileD\nir日志文件路径。如果修改该路径，需确保运行日志进程的用户对该\n路径有读写权限。\n该路径最长支持 255字节。如果输入超过 255字节长度，系统自动\n取截断后的路径，并在截断后的路径下保存日志。\npermission_fo\nr_all是否支持与 slogd进程运行用户不同属组的其他用户启动 APP后写\n日志。\n● 0：不支持。\n● 1：支持。CANN社区版\n日志参考 7 查看日志配置文件\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 16"
+    },
+    {
+      "page": 21,
+      "content": "8 查看trace日志\n简介\ntrace机制是指在程序运行过程中将软件栈的维测信息记录在内存中，当程序运行出错\n或进程结束时落盘到文件，以免在程序运行过程中频繁产生和记录日志文件，影响性\n能。当前仅 Ascend EP 标准形态支持该功能。\n日志说明\ntrace日志落盘根目录默认为“ $HOME/ascend/atrace/ ”，也可以通过环境变量\nASCEND_WORK_PATH 指定trace日志落盘路径，例如设置 export\nASCEND_WORK_PATH=/home/test ，具体请参考《 环境变量参考 》。\ntrace日志具体落盘路径为：“ $HOME/ascend/atrace/trace_ {进程组 pid}_{首次加载\ntrace动态库的进程 pid}_{首次加载 trace动态库的时间戳 }/{event_name} _event_ {当前\n进程pid}_{目录生成时的时间戳 }/”，其中 event_name 为事件类型，取值为：\nschedule （业务流程异常，如算子执行报错等）、 stackcore （进程崩溃或收到异常信\n号）、 exit（进程正常退出析构）。\n表8-1 trace日志文件说明\n存储路径 说明\nschedule_tracer_ts_{device_id}.tx\nt当发生 AI Core Error 、notify wait 超时时，\nTask Schedule 回传到 host侧的维测信息，包括\n寄存器、硬件 buffer、bitmap等。\nstackcore_tracer_{signal}_{tid}_{\nprogram_name}_{time}.txt当Host业务进程崩溃时记录的轻量级 core文\n件，包括栈帧地址和基地址，该文件需要使用\nasys工具解析，具体请参见《 故障处理 》。\nschedule_tracer_{object_name}.t\nxtRuntime 、HCCL等模块在运行过程中上报的轨\n迹信息，记录进程运行过程。\nschedule_tracer_{object_name}.b\ninAICPU等模块在运行过程中上报的轨迹信息，\n记录进程运行过程。以二进制格式存储，需要\n使用asys工具解析，具体请参见《 故障处\n理》。\n CANN社区版\n日志参考 8 查看trace日志\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 17"
+    },
+    {
+      "page": 22,
+      "content": "●通过环境变量 ASCEND_LOG_DEVICE_FLUSH_TIMEOUT 配置Device侧日志回传到\nHost侧的延时时间，具体请参考《 环境变量参考 》。\n●通过环境变量 ASCEND_TRACE_RECORD_NUM 可控制“ $HOME/ascend/atrace/\ntrace_ {进程组 pid}_{首次加载 trace动态库的进程 pid}_{首次加载 trace动态库的时\n间戳}/”目录下“ schedule_event_ {当前进程 pid}_{目录生成时的时间戳 }”子目录\n的老化规格，具体请参考《 环境变量参考 》。\n以上目录是容器或物理机内所有应用程序共同使用的，会不断增加新的应用进程，日\n志会不断增多，因此需要用户定期清理该目录（可以使用系统自带的 logrotate 实现日\n志切分），否则可能导致磁盘空间不足，影响业务正常运行。CANN社区版\n日志参考 8 查看trace日志\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 18"
+    },
+    {
+      "page": 23,
+      "content": "9 FAQ\n9.1 日志没有正常落盘\n9.2 修改环境时区后，日志打印的时间戳不正确\n9.3 未设置日志打印环境变量，但是在屏幕上仍有日志显示\n9.1 日志没有正常落盘\nAscend EP 标准形态\n通过msnpureport 工具导出 Device侧系统日志失败\n如果通过 msnpureport 工具导出 Device侧系统日志失败，请参照如下步骤处理：\n步骤1在Host侧执行 msnpureport 工具命令后，查看打印的提示信息定位问题。\n若未能解决问题，请执行 步骤2。\n步骤2在Host侧执行如下命令查看 Host侧日志存放路径（运行 msnpureport 工具所在路径）\n所在的磁盘空间是否已满。\ndf -h\n步骤3若未能解决问题，您可以获取日志后单击 Link联系技术支持。\n----结束\n应用类日志没有正常落盘\n如果应用类日志没有正常落盘（包括“ $HOME/ascend/log/ ”目录下 plog日志和\ndevice- id日志），请参照如下步骤处理：\n步骤1执行如下命令查看 Host侧“/var/log/messages ”文件中是否有相关的错误日志。\naarch64架构：\ncat /var/log/messages\nx86_64架构：\ncat /var/log/syslog\n若未能解决问题，请执行 步骤2。CANN社区版\n日志参考 9 FAQ\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 19"
+    },
+    {
+      "page": 24,
+      "content": "步骤2在Host侧执行如下命令查看日志落盘路径（“ $HOME/ascend/log/ ”）所在的磁盘空\n间是否已满。\ndf -h\n若未能解决问题，请执行 步骤3。\n步骤3在Host侧通过 msnpureport 工具导出 Device侧系统日志，查看是否有相关的错误日\n志。\n通过msnpureport 工具导出 Device侧系统日志的方法请参见《 msnpureport 工具使用\n指南》。\n步骤4若未能解决问题，您可以获取日志后单击 Link联系技术支持。\n----结束\nControl CPU 开放形态\n应用类日志没有正常落盘\n如果应用类日志没有正常落盘，请参照如下步骤处理：\n步骤1执行如下命令查看应用进程依赖的动态库是否正确。\nldd xxx\nxxx为二进制应用进程。\n步骤2执行如下命令查看日志落盘路径（“ /var/log/npu/slog ”）所在的磁盘空间是否已\n满。\ndf -h\n步骤3执行如下命令查看 slogd进程是否存在。\nps -elf | grep slogd\n若返回 slogd进程相关信息，说明 slogd进程存在。\n步骤4若以上均无问题，但应用类日志仍没有正常落盘，可以尝试 6 重启日志进程 。\n----结束\n系统类日志没有正常落盘\n如果系统类日志没有正常落盘，请参照如下步骤处理：\n步骤1执行如下命令查看相关日志进程（ slogd、sklogd）是否存在。\nps -elf | grep log\n若显示进程相关信息，说明相关日志进程已存在。\n步骤2执行如下命令查看日志落盘路径（“ /var/log/npu/slog ”）所在的磁盘空间是否已\n满。\ndf -h\n步骤3若以上均无问题，但系统类日志仍没有正常落盘，可以尝试 6 重启日志进程 。\n----结束\nAscend RC 形态\n应用类日志没有正常落盘CANN社区版\n日志参考 9 FAQ\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 20"
+    },
+    {
+      "page": 25,
+      "content": "如果应用类日志没有正常落盘，请参照如下步骤处理：\n步骤1执行如下命令查看应用进程依赖的动态库是否正确。\nldd xxx\nxxx为二进制应用进程。\n步骤2执行如下命令查看日志落盘路径（“ /var/log/npu/slog ”）所在的磁盘空间是否已\n满。\ndf -h\n步骤3执行如下命令查看 slogd进程是否存在。\nps -elf | grep slogd\n若返回 slogd进程相关信息，说明 slogd进程存在。\n对于Atlas 200I/500 A2 推理产品，若 slogd进程不存在，您可以获取日志后单击 Link\n联系技术支持。\n步骤4若以上均无问题，但应用类日志仍没有正常落盘，可以尝试参考 6 重启日志进程 内容\n处理日志进程启动异常。\n----结束\n系统类日志没有正常落盘\n如果系统类日志没有正常落盘，请参照如下步骤处理：\n步骤1执行如下命令查看相关日志进程（ slogd、sklogd）是否存在。\nps -elf | grep log\n若显示进程相关信息，说明相关日志进程已存在。\n对于Atlas 200I/500 A2 推理产品，若进程不存在，您可以获取日志后单击 Link联系技\n术支持。\n步骤2执行如下命令查看日志落盘路径（“ /var/log/npu/slog ”）所在的磁盘空间是否已\n满。\ndf -h\n步骤3若以上均无问题，但系统类日志仍没有正常落盘，可以尝试参考 6 重启日志进程 内容\n处理日志进程启动异常。\n----结束\n9.2 修改环境时区后，日志打印的时间戳不正确\n异常现象\n日志打印信息中时间戳与系统环境的时间不一致。\n可能原因\n产生该问题的可能原因是用户启动了 AI任务后修改了系统环境的时区。\n处理方式\n方法一：重新启动 AI任务。CANN社区版\n日志参考 9 FAQ\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 21"
+    },
+    {
+      "page": 26,
+      "content": "方法二：修改系统环境时区。\n# 查看当前时区设置\ntimedatectl\n# 以Asia/Shanghai 为例，设置新时区\nsudo timedatectl set-timezone Asia/Shanghai\n9.3 未设置日志打印环境变量，但是在屏幕上仍有日志显示\n异常现象\n用户未设置日志打印环境变量（ export ASCEND_SLOG_PRINT_TO_STDOUT=1 ），\n但是在屏幕上仍有日志显示。\n可能原因\n日志模块收到日志消息后，首先根据环境变量判断是否打印到屏幕上，若不需要打印\n到屏幕上，则创建 Socket与slogd进程建立连接，将日志发送给 slogd进程，由 slogd进\n程落盘。但是如果创建 Socket失败，则会将日志打印到屏幕上。\n处理方式\n创建Socket失败的原因一般是用户在执行用例时，打开文件的数量超过了系统默认的\n最大数量。可以通过 ulimit -a 和lsof | wc -l 命令分别查看系统默认打开文件的最大数\n量（即 open files字段的取值）以及当前已经打开的文件数量，查看当前已经打开的文\n件数量是否超过了限制值。如果超过限制值，可以通过 ulimit -n  <num >命令设置打开\n文件的最大数量，保证当前已经打开的文件数量不超过限制值。CANN社区版\n日志参考 9 FAQ\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 22"
+    }
+  ]
+}

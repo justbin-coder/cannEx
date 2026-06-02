@@ -1,0 +1,171 @@
+{
+  "version": "v2.0",
+  "cann_version": "9.0.0",
+  "last_updated": "2026-05-24",
+  "docs": [
+    {
+      "doc_id": "717ca9ab-c7bc-4cbb-8026-6e7089c0e4de",
+      "doc_name": "CANN社区版 9.0.0 软件安装 01.pdf",
+      "category": "install",
+      "audience": [
+        "B"
+      ],
+      "pages": 108,
+      "priority": "P0",
+      "path": "docs/717ca9ab-c7bc-4cbb-8026-6e7089c0e4de.json"
+    },
+    {
+      "doc_id": "e8997a18-9ac1-49ad-98ee-84483f43ffce",
+      "doc_name": "CANN社区版 9.0.0 Ascend C算子开发指南 技术部分 01_trimmed.pdf",
+      "category": "operator_dev",
+      "audience": [
+        "A",
+        "F"
+      ],
+      "pages": 712,
+      "priority": "P0",
+      "path": "docs/e8997a18-9ac1-49ad-98ee-84483f43ffce.json"
+    },
+    {
+      "doc_id": "1854b83e-01c4-4e42-88cc-61cf1997a138",
+      "doc_name": "CANN社区版 9.1.0-beta.1 基础数据结构和接口参考 01.pdf",
+      "category": "data_struct_ref",
+      "audience": [
+        "A",
+        "F"
+      ],
+      "pages": 441,
+      "priority": "P1",
+      "path": "docs/1854b83e-01c4-4e42-88cc-61cf1997a138.json"
+    },
+    {
+      "doc_id": "a533bd35-3d12-4daf-bbe8-14349a89d5af",
+      "doc_name": "CANN社区版 9.1.0-beta.1 故障处理01.pdf",
+      "category": "troubleshooting",
+      "audience": [
+        "A",
+        "F",
+        "B"
+      ],
+      "pages": 264,
+      "priority": "P1",
+      "path": "docs/a533bd35-3d12-4daf-bbe8-14349a89d5af.json"
+    },
+    {
+      "doc_id": "c44bdf1c-f87d-4ef0-84a5-83016221695a",
+      "doc_name": "CANN社区版 9.1.0-beta1 性能调优工具用户指南 01.pdf",
+      "category": "perf_tuning",
+      "audience": [
+        "A",
+        "F"
+      ],
+      "pages": 397,
+      "priority": "P1",
+      "path": "docs/c44bdf1c-f87d-4ef0-84a5-83016221695a.json"
+    },
+    {
+      "doc_id": "47561b98-bf7a-46df-be4b-a75fc16da1e3",
+      "doc_name": "CANN社区版 9.1.0-beta.1 环境变量参考 01.pdf",
+      "category": "env_ref",
+      "audience": [
+        "A",
+        "F",
+        "B"
+      ],
+      "pages": 159,
+      "priority": "P2",
+      "path": "docs/47561b98-bf7a-46df-be4b-a75fc16da1e3.json"
+    },
+    {
+      "doc_id": "e50a5cfe-1f3b-44b0-8508-bd872a04400e",
+      "doc_name": "CANN社区版 9.1.0-beta1 精度调试工具用户指南 01.pdf",
+      "category": "precision_debug",
+      "audience": [
+        "A",
+        "F"
+      ],
+      "pages": 116,
+      "priority": "P2",
+      "path": "docs/e50a5cfe-1f3b-44b0-8508-bd872a04400e.json"
+    },
+    {
+      "doc_id": "faaf98f8-89a5-4722-8618-239c9dfdc67b",
+      "doc_name": "CANN社区版 9.1.0-beta1 算子编译工具用户指南.pdf",
+      "category": "op_compile",
+      "audience": [
+        "A",
+        "F"
+      ],
+      "pages": 28,
+      "priority": "P2",
+      "path": "docs/faaf98f8-89a5-4722-8618-239c9dfdc67b.json"
+    },
+    {
+      "doc_id": "148c03ff-2fe5-4594-9eee-b71d0937e490",
+      "doc_name": "CANN社区版 9.1.0-beta1 日志参考 01.pdf",
+      "category": "log_ref",
+      "audience": [
+        "A",
+        "F",
+        "B"
+      ],
+      "pages": 26,
+      "priority": "P2",
+      "path": "docs/148c03ff-2fe5-4594-9eee-b71d0937e490.json"
+    }
+  ],
+  "repos": [
+    {
+      "name": "ops-transformer",
+      "category": "operator_implementation",
+      "audience": [
+        "A",
+        "F"
+      ],
+      "priority": "P0",
+      "local_path": "raw/repos/ops-transformer",
+      "codegraph_db": "raw/repos/ops-transformer/.codegraph/codegraph.db",
+      "workspace_path": "repos/ops-transformer",
+      "last_indexed": "2026-05-30"
+    },
+    {
+      "name": "ops-cv",
+      "category": "operator_cv",
+      "audience": [
+        "A",
+        "F"
+      ],
+      "priority": "P1",
+      "local_path": "raw/repos/ops-cv",
+      "codegraph_db": "raw/repos/ops-cv/.codegraph/codegraph.db",
+      "workspace_path": "repos/ops-cv",
+      "last_indexed": "2026-05-30"
+    },
+    {
+      "name": "ops-math",
+      "category": "operator_math",
+      "audience": [
+        "A",
+        "F"
+      ],
+      "priority": "P1",
+      "local_path": "raw/repos/ops-math",
+      "codegraph_db": "raw/repos/ops-math/.codegraph/codegraph.db",
+      "workspace_path": "repos/ops-math",
+      "last_indexed": "2026-05-30"
+    },
+    {
+      "name": "ops-nn",
+      "category": "operator_nn",
+      "audience": [
+        "A",
+        "F"
+      ],
+      "priority": "P1",
+      "local_path": "raw/repos/ops-nn",
+      "codegraph_db": "raw/repos/ops-nn/.codegraph/codegraph.db",
+      "workspace_path": "repos/ops-nn",
+      "last_indexed": "2026-05-30"
+    }
+  ]
+}

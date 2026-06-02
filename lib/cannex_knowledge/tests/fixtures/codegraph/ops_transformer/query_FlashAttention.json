@@ -1,0 +1,107 @@
+[
+  {
+    "node": {
+      "id": "function:e9a9f103633d7a6e05249127abe23e12",
+      "kind": "function",
+      "name": "FlashAttention",
+      "qualifiedName": "FlashAttention",
+      "filePath": "attention/common/op_kernel/arch35/fia_kernel_noquant_gqa.h",
+      "language": "cpp",
+      "startLine": 397,
+      "endLine": 443,
+      "startColumn": 4,
+      "endColumn": 9,
+      "visibility": null,
+      "isExported": false,
+      "isAsync": false,
+      "isStatic": false,
+      "isAbstract": false,
+      "updatedAt": 1779551035361
+    },
+    "score": 103.35787101805397
+  },
+  {
+    "node": {
+      "id": "method:74a26dbe5df56582c53a0ae3a313d515",
+      "kind": "method",
+      "name": "FlashAttentionScore",
+      "qualifiedName": "FlashAttentionScore::FlashAttentionScore",
+      "filePath": "attention/flash_attention_score/op_host/flash_attention_score_def.cpp",
+      "language": "cpp",
+      "startLine": 22,
+      "endLine": 334,
+      "startColumn": 4,
+      "endColumn": 5,
+      "visibility": "public",
+      "isExported": false,
+      "isAsync": false,
+      "isStatic": false,
+      "isAbstract": false,
+      "updatedAt": 1779551042136
+    },
+    "score": 80.36980745272706
+  },
+  {
+    "node": {
+      "id": "function:4f322b6ad05ea5df21a3ee2bce09b7e2",
+      "kind": "function",
+      "name": "FlashAttentionScore",
+      "qualifiedName": "FlashAttentionScore",
+      "filePath": "attention/flash_attention_score/op_api/flash_attention_score.cpp",
+      "language": "cpp",
+      "startLine": 40,
+      "endLine": 191,
+      "startColumn": 0,
+      "endColumn": 1,
+      "visibility": null,
+      "isExported": false,
+      "isAsync": false,
+      "isStatic": false,
+      "isAbstract": false,
+      "updatedAt": 1779551041398
+    },
+    "score": 80.35787101805397
+  },
+  {
+    "node": {
+      "id": "class:e5d8ccd4c01a6fa791f4e8e0129bc4a2",
+      "kind": "class",
+      "name": "FlashAttentionScore",
+      "qualifiedName": "FlashAttentionScore",
+      "filePath": "attention/flash_attention_score/op_host/flash_attention_score_def.cpp",
+      "language": "cpp",
+      "startLine": 20,
+      "endLine": 335,
+      "startColumn": 0,
+      "endColumn": 1,
+      "visibility": null,
+      "isExported": false,
+      "isAsync": false,
+      "isStatic": false,
+      "isAbstract": false,
+      "updatedAt": 1779551042136
+    },
+    "score": 78.35787101805397
+  },
+  {
+    "node": {
+      "id": "method:09b3aad0082ddaeb555efedc625e2443",
+      "kind": "method",
+      "name": "FlashAttentionScoreGrad",
+      "qualifiedName": "FlashAttentionScoreGrad::FlashAttentionScoreGrad",
+      "filePath": "attention/flash_attention_score_grad/op_host/flash_attention_score_grad_def.cpp",
+      "language": "cpp",
+      "startLine": 22,
+      "endLine": 503,
+      "startColumn": 4,
+      "endColumn": 5,
+      "visibility": "public",
+      "isExported": false,
+      "isAsync": false,
+      "isStatic": false,
+      "isAbstract": false,
+      "updatedAt": 1779551045476
+    },
+    "score": 76.36980745272706
+  }
+]

@@ -1,0 +1,41 @@
+# Raw 素材（本地落盘，体积大不入库）
+raw/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+
+# 日志和临时
+logs/
+*.log
+*.pid
+
+# CodeGraph 单仓索引产物（巨大，按需重建）
+**/.codegraph/
+
+# Chainlit 框架源码（误入工作目录，不入库）
+webchat/chainlit/
+
+# 部署 secrets（不入库）
+deploy/.env
+deploy/cannex.db
+
+# 所有 .env 密钥文件（保留 .env.example）
+.env
+**/.env
+!*.env.example
+
+# PageIndex 建树暂存目录
+workspace/.pi_staging/
+
+# CodeGraph SQLite 产物（按需重建）
+workspace/repos/*/codegraph.db
+
+# Chainlit 默认欢迎页模板（根目录，非项目内容）
+/chainlit.md
+
+# 系统
+.DS_Store
+.obsidian/

@@ -1,0 +1,23 @@
+[
+  {
+    "node": {
+      "id": "method:0897e9c9beb1c68b91c789045428211b",
+      "kind": "method",
+      "name": "DataCopy",
+      "qualifiedName": "CopyGmToCbufAlignV2Base::DataCopy",
+      "filePath": "mc2/3rd/tensor_api/impl/tensor_api/arch/datamove/gm_to_l1/npu_arch_3510/instruction.h",
+      "language": "cpp",
+      "startLine": 45,
+      "endLine": 58,
+      "startColumn": 4,
+      "endColumn": 5,
+      "visibility": null,
+      "isExported": false,
+      "isAsync": false,
+      "isStatic": false,
+      "isAbstract": false,
+      "updatedAt": 1779551127073
+    },
+    "score": 107.69494153888391
+  }
+]

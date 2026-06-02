@@ -1,0 +1,60 @@
+# CannEx Webchat — beta deployment
+# Usage:
+#   cd deploy
+#   cp .env.example .env       # then edit secrets
+#   docker compose up -d --build
+#   docker compose logs -f web
+
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: cannex-web:latest
+    container_name: cannex-web
+    restart: unless-stopped
+    expose:
+      - "8000"
+    environment:
+      CANNEX_ROOT: /app
+      CANNEX_LOGS_DIR: /app/logs
+      CANNEX_USERS_DB: /data/cannex.db
+      CHAINLIT_AUTH_SECRET: ${CHAINLIT_AUTH_SECRET:?CHAINLIT_AUTH_SECRET must be set in deploy/.env}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-https://api.anthropic.com}
+      CANNEX_MODEL: ${CANNEX_MODEL:-claude-sonnet-4-6}
+    volumes:
+      # Knowledge artefacts — rsync'd from dev box, read-only inside container.
+      - ../workspace:/app/workspace:ro
+      # SQLite users DB + future thread persistence.
+      - cannex-data:/data
+      # App logs (cannex.app, agent loop, worker).
+      - cannex-logs:/app/logs
+    networks:
+      - cannex-net
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: cannex-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - cannex-net
+    depends_on:
+      - web
+
+networks:
+  cannex-net:
+    driver: bridge
+
+volumes:
+  cannex-data:
+  cannex-logs:
+  caddy-data:
+  caddy-config:

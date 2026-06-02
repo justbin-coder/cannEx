@@ -1,0 +1,186 @@
+samples:
+
+  # ── Attention ──────────────────────────────────────────────────────────────
+
+  - id: flash-attention-score
+    name: FlashAttentionScore
+    path: attention/flash_attention_score
+    entry_files:
+      - op_kernel/flash_attention_score.cpp
+      - op_kernel/arch32/flash_attention_score_bn2gs1s2_b.h
+      - op_host/flash_attention_score_def.cpp
+    computation_pattern: cube
+    apis_used: [Matmul, DataCopy, TPipe, TQue, TCubeTiling, GetSysWorkSpacePtr]
+    complexity: expert
+    teaches:
+      - "BMM1（Q×K^T）→ Softmax → BMM2（×V）三阶段流水线实现"
+      - "arch32/arch35 双架构分支适配模式"
+      - "Tiling 参数设计：bmm1TilingData / bmm2TilingData 拆分"
+      - "#ifdef __DAV_C220_CUBE__ 的 Cube/Vector 核分流编译"
+    limitations:
+      - "代码量大，建议先读 arch32/flash_attention_score_bn2gs1s2_b.h 单一 shape 实现"
+    related_docs: []
+
+  - id: incre-flash-attention
+    name: IncreFlashAttention（增量推理 Attention）
+    path: attention/incre_flash_attention
+    entry_files:
+      - op_api/
+      - README.md
+    computation_pattern: fusion
+    apis_used: [Matmul, DataCopy, Gather, TPipe, TQue]
+    complexity: intermediate
+    teaches:
+      - "Decode 阶段 KV Cache 拼接与增量 Attention 计算"
+      - "PageAttention / 量化 / 左 Padding 特性融合"
+      - "多 Batch 不等长序列处理（padding 后固定长度输入）"
+    limitations:
+      - "query 的 S 轴固定为 1，仅适用 Decode 场景"
+    related_docs: []
+
+  - id: prompt-flash-attention
+    name: PromptFlashAttention（全量推理 Attention）
+    path: attention/prompt_flash_attention
+    entry_files:
+      - examples/
+      - README.md
+    computation_pattern: cube
+    apis_used: [Matmul, DataCopy, TPipe, TQue]
+    complexity: intermediate
+    teaches:
+      - "Prefill 阶段全量 FlashAttention 实现"
+      - "与 IncreFlashAttention 配对，理解全量 vs 增量的设计差异"
+    limitations:
+      - "不包含 KVCache 增量逻辑"
+    related_docs: []
+
+  # ── FFN ───────────────────────────────────────────────────────────────────
+
+  - id: ffn-glu
+    name: FFN with GLU/SwiGLU
+    path: ffn/ffn
+    entry_files:
+      - op_kernel/ffn_glu.h
+      - op_kernel/ffn_glu.cpp
+      - op_kernel/ffn_base.h
+    computation_pattern: vector_to_cube
+    apis_used: [Matmul, DataCopy, Mul, Add, TPipe, TQue]
+    complexity: intermediate
+    teaches:
+      - "vector+cube 融合经典范式：mm1（cube）→ GLU激活（vector）→ mm2（cube）"
+      - "TQue<VECIN/VECOUT> 管理 cube→vector 数据流转"
+      - "MatmulType 模板参数配置（ND 格式、GM 位置）"
+    limitations:
+      - "GLU 激活函数部分在 ffn_base.h 中，需结合父类阅读"
+    related_docs: []
+
+  - id: ffn-standard
+    name: FFN（标准实现）
+    path: ffn/ffn
+    entry_files:
+      - op_kernel/ffn.h
+      - op_kernel/ffn.cpp
+      - op_kernel/ffn_high_performence.h
+    computation_pattern: cube
+    apis_used: [Matmul, DataCopy, TPipe, TQue, Relu]
+    complexity: beginner
+    teaches:
+      - "最简洁的两层矩阵乘（mm1→激活→mm2）实现"
+      - "高性能变体 ffn_high_performence.h 与标准实现的对比"
+    limitations:
+      - "不含量化路径，量化版见 ffn_antiquant.h"
+    related_docs: []
+
+  # ── GMM ──────────────────────────────────────────────────────────────────
+
+  - id: grouped-matmul
+    name: GroupedMatmul（分组矩阵乘）
+    path: gmm/grouped_matmul
+    entry_files:
+      - op_kernel/grouped_matmul.h
+      - op_kernel/grouped_matmul.cpp
+    computation_pattern: cube
+    apis_used: [Matmul, DataCopy, TPipe, TCubeTiling]
+    complexity: intermediate
+    teaches:
+      - "MNConfig 多 shape 策略（大/小 M 阈值分支）"
+      - "多组 Expert 的 Batch Matmul 编排"
+      - "thresholdBlockNum / thresholdDimM 性能调优常量"
+    limitations:
+      - "量化版本见 quant_grouped_matmul_dequant/，逻辑更复杂"
+    related_docs: []
+
+  # ── MoE ──────────────────────────────────────────────────────────────────
+
+  - id: moe-gating-topk
+    name: MoeGatingTopK（MoE 专家路由）
+    path: moe/moe_gating_top_k
+    entry_files:
+      - op_kernel/moe_gating_top_k.cpp
+      - op_kernel/arch35/common.h
+    computation_pattern: vector
+    apis_used: [DataCopy, TopK, Softmax, TPipe, TQue]
+    complexity: intermediate
+    teaches:
+      - "MoE gating：Softmax→TopK 路由逻辑的 vector 实现"
+      - "arch35 新指令在路由场景中的应用"
+    limitations:
+      - "需结合 moe_finalize_routing 理解完整 MoE 数据流"
+    related_docs: []
+
+  # ── MC2（通算融合） ────────────────────────────────────────────────────────
+
+  - id: all-gather-matmul
+    name: AllGatherMatmul（通算融合）
+    path: mc2/all_gather_matmul
+    entry_files:
+      - op_kernel/all_gather_matmul.cpp
+      - op_kernel/all_gather_matmul_base.h
+      - op_kernel/all_gather_matmul_tiling.h
+    computation_pattern: fusion
+    apis_used: [Matmul, DataCopy, TPipe, HCCL]
+    complexity: expert
+    teaches:
+      - "AllGather 通信与 Matmul 计算重叠（通算融合）"
+      - "全连接拓扑（full_mesh）与非全连接路径的分支"
+      - "多卡场景下的 Tiling 设计"
+    limitations:
+      - "依赖 HCCL 多卡环境，单卡环境无法直接运行"
+    related_docs: []
+
+  # ── PosEmbedding ──────────────────────────────────────────────────────────
+
+  - id: rotary-position-embedding
+    name: RotaryPositionEmbedding（RoPE）
+    path: posembedding/rotary_position_embedding
+    entry_files:
+      - op_kernel/
+    computation_pattern: vector
+    apis_used: [DataCopy, Mul, Add, TPipe, TQue]
+    complexity: beginner
+    teaches:
+      - "旋转位置编码（RoPE）的 vector 实现"
+      - "sin/cos 查表与元素级乘加操作"
+    limitations:
+      - "量化/KVCache 融合版本见 rope_quant_kvcache/"
+    related_docs: []
+
+  # ── Experimental / 开发模板 ────────────────────────────────────────────────
+
+  - id: npu-ops-transformer-ext
+    name: NpuOpsTransformerExt（自定义算子模板）
+    path: experimental/npu_ops_transformer_ext
+    entry_files:
+      - npu_ops_transformer_ext/
+      - setup.py
+      - README.md
+    computation_pattern: fusion
+    apis_used: [自定义，模板留空]
+    complexity: intermediate
+    teaches:
+      - "从零开始向 ops-transformer 贡献自定义算子的完整工程模板"
+      - "PyTorch 张量操作无缝集成（自动微分、GPU/NPU 统一接口）"
+      - "experimental/ 目录的贡献规范与 PR 流程"
+    limitations:
+      - "模板代码不可直接运行，需根据实际算子填充实现"
+    related_docs: []

@@ -1,0 +1,338 @@
+{
+  "id": "faaf98f8-89a5-4722-8618-239c9dfdc67b",
+  "type": "pdf",
+  "path": "/Users/justbin/Desktop/CannEx/raw/docs/CANN社区版 9.1.0-beta1 算子编译工具用户指南.pdf",
+  "doc_name": "CANN社区版 9.1.0-beta1 算子编译工具用户指南.pdf",
+  "doc_description": "该文档是华为CANN社区版9.1.0-beta1《算子编译工具用户指南》，详细说明了op_compiler工具的功能、使用前准备、静态shape编译与调试版本编译流程、Kernel包的安装卸载方法，以及完整的命令行参数配置，专用于在昇腾AI处理器上优化和调试算子性能。",
+  "page_count": 28,
+  "structure": [
+    {
+      "title": "Preface",
+      "node_id": "0000",
+      "start_index": 1,
+      "end_index": 4,
+      "summary": "该部分文档是华为CANN社区版9.1.0-beta1《算子编译工具用户指南》的开头内容，主要包括文档基本信息、版权声明、商标声明、法律免责说明以及多项安全与合规政策链接（如产品生命周期政策、漏洞处理流程、初始证书权责说明、最终用户许可协议和产品资料生命周期策略）。此外，还提供了完整的目录结构，显示文档主体涵盖三大部分：简介、使用方法（包括使用前准备、静态shape编译、调试版本编译及其Kernel包的生成与安装卸载）以及详细的参数说明（涵盖帮助、输入、输出、目标芯片和调试等各类命令行参数）。"
+    },
+    {
+      "title": "简介",
+      "node_id": "0001",
+      "start_index": 5,
+      "end_index": 8,
+      "summary": "该部分文档介绍了昇腾CANN提供的算子编译工具（op_compiler）的核心功能、使用约束及工作原理。主要内容包括：  \n1. **主要功能**：  \n   - **静态shape编译**：适用于shape固定或变化较少的场景，可生成静态Kernel包以提升性能，并支持开启调优模式进一步优化。  \n   - **调试版本编译**：用于复现和定位算子问题（如AICore Error、内存越界等），生成包含调试信息的二进制文件。  \n\n2. **使用约束**：  \n   - 静态编译默认支持Atlas推理/训练系列、Atlas A2系列及Ascend 950PR/DT产品；  \n   - 调优模式仅支持Atlas A2系列产品，且不允许多用户同时对同一设备调优，调优前需关闭Profiling功能；  \n   - 调试版本编译不支持Ascend 950PR/DT。  \n\n3. **功能架构与编译流程**：  \n   - 工具根据输入的算子信息统计文件或kernel_name（仅调试场景）进行处理；  \n   - 根据是否启用调试或调优选项，分别执行调试编译、默认静态编译或调优编译流程；  \n   - 最终生成并打包算子Kernel文件。  \n\n4. **静态编译优势**：  \n   - 编译时确定tensor大小，提高存储利用率；  \n   - 针对具体shape优化，减少标量操作和同步开销，提升并行执行效率。  \n\n5. **调优与调试补充说明**：  \n   - 调优模式用于进一步性能提升；  \n   - 调试版本专用于问题分析与定位。"
+    },
+    {
+      "title": "使用方法",
+      "node_id": "0002",
+      "start_index": 9,
+      "end_index": 9,
+      "summary": "The partial document outlines the usage instructions for a CANN-based operator compilation tool, focusing on three main sections: preparation before use, static shape compilation, and debug version compilation. It primarily details the \"preparation before use\" steps, which include installing required software packages (drivers, firmware, and CANN software) as referenced in the CANN Software Installation guide, and configuring necessary environment variables. Specifically, it explains how to set up CANN software base environment variables using provided shell scripts for both root and non-root users, configure Python 3.7.5-related environment variables required by the AOE tool (including library paths and executable paths), and optionally set additional tuning-related environment variables such as ASCEND_DEVICE_ID, TUNE_BANK_PATH, TE_PARALLEL_COMPILER, and REPEAT_TUNE.",
+      "nodes": [
+        {
+          "title": "使用前准备",
+          "node_id": "0003",
+          "start_index": 9,
+          "end_index": 11,
+          "summary": "该部分文档主要介绍了CANN社区版算子编译工具的使用方法，涵盖以下核心内容：  \n1. **使用前准备**：包括安装CANN软件包（驱动、固件及工具包）、配置基础环境变量（通过set_env.sh脚本）、设置AOE工具依赖的Python 3.7.5环境变量（如LD_LIBRARY_PATH和PATH），以及可选的调优相关环境变量（如ASCEND_DEVICE_ID、TUNE_BANK_PATH、TE_PARALLEL_COMPILER和REPEAT_TUNE），并详细说明了各环境变量的作用、取值范围及配置注意事项。  \n2. **静态shape编译流程**：描述了如何生成算子Kernel包，包括通过PyTorch Profiler或acl接口Dump算子信息统计文件（JSON格式），以及使用op_compiler工具执行编译命令（支持默认模式和调优模式），并给出了具体的命令参数示例。  \n3. **调试版本编译前提**：指出在调试场景下需预先安装对应的问题复现场景中的静态和动态二进制包。  \n此外，文档还提供了工具路径定位、环境变量持久化建议（如写入~/.bashrc）及多用户共享知识库的配置指导。"
+        },
+        {
+          "title": "静态shape编译",
+          "node_id": "0004",
+          "start_index": 11,
+          "end_index": 11,
+          "summary": "该部分文档主要介绍了Ascend CANN平台下算子调优与编译的相关配置和操作流程。核心内容包括：  \n1. **环境变量 REPEAT_TU** 的作用——用于控制是否重新发起子图或算子调优，当知识库中已存在对应shape的调优策略时，默认跳过调优；若算子逻辑发生变更（如GEMM算子新增ND输入支持），需设为True以强制重新调优，其取值为True或False，默认为False。  \n2. **调试版本编译前提**——开发者需预先安装与问题场景一致的静态和动态二进制包。  \n3. **工具路径说明**——op_compiler工具位于${INSTALL_DIR}/compiler/bin/，并给出默认安装路径示例。  \n4. **静态shape算子编译流程**：  \n   - 步骤1：通过PyTorch Profiler接口（设置record_op_args=True）或acl接口（aclopStartDumpArgs/aclopStopDumpArgs）生成算子信息统计JSON文件；  \n   - 步骤2：使用op_compiler命令进行默认模式或调优模式的算子编译，提供两种命令格式及参数说明（如--op_params_dir、--soc_version、--output等）。",
+          "nodes": [
+            {
+              "title": "算子编译生成 Kernel包",
+              "node_id": "0005",
+              "start_index": 11,
+              "end_index": 12,
+              "summary": "该部分文档主要介绍了CANN平台下算子编译工具（op_compiler）的使用方法，重点涵盖以下内容：  \n1. **环境变量 REPEAT_TUNE 的作用**：用于控制是否在已有调优策略的情况下重新发起调优，适用于子图或算子调优场景，默认为False，设为True可强制重新调优（如算子逻辑变更后）。  \n2. **调试版本编译前提**：需预先安装对应问题场景下的静态和动态二进制包。  \n3. **工具路径说明**：op_compiler位于${INSTALL_DIR}/compiler/bin/，并给出默认安装路径示例。  \n4. **静态shape编译流程**：  \n   - **步骤1**：通过PyTorch Profiler接口或acl接口（aclopStartDumpArgs/aclopStopDumpArgs）生成算子信息统计JSON文件。  \n   - **步骤2**：使用op_compiler命令进行默认或调优模式编译，详细说明了各参数（如--op_params_dir、--soc_version、--compile_mode=tune等）的含义、简写形式、取值及使用注意事项。  \n5. **辅助功能**：支持使用--count参数统计dump目录中JSON文件数量，用于判断静态Kernel包与当前网络结构是否匹配。  \n6. **Kernel包安装与卸载**：简要提及后续将介绍安装/卸载操作，并强调不能在dump目录下直接执行编译命令。"
+            },
+            {
+              "title": "Kernel 包安装和卸载",
+              "node_id": "0006",
+              "start_index": 12,
+              "end_index": 14,
+              "summary": "该部分文档主要介绍了华为Ascend AI处理器平台上的算子编译工具（op_compiler）的使用方法，涵盖以下核心内容：\n\n1. **基本编译命令与参数说明**：详细解释了op_compiler工具的主要命令行参数，包括必选参数（如--op_params_dir/-p指定算子统计信息目录、--soc_version/-v指定AI芯片型号）和可选参数（如--log/-l设置日志级别、--job/-j设置并行进程数、--compile_mode/-m启用调优模式、--output/-o指定输出路径）。同时提供了参数的长格式与短格式用法示例。\n\n2. **soc_version查询方法**：说明当不确定设备型号时，可通过npu-smi info命令查询，并在“Name”字段前添加“Ascend”作为soc_version值。\n\n3. **算子统计信息校验机制**：介绍如何使用--count参数配合-p参数统计dump目录下JSON文件数量，用于判断已安装的静态Kernel包是否与当前网络结构匹配。若网络调整后JSON数量增加，表明部分算子不再匹配，需重新编译安装或接受动态执行的性能损失。\n\n4. **静态Kernel包的安装与卸载流程**：\n   - 安装：通过运行生成的.run包进行，默认安装至${install_path}/opp/static_kernel目录，不支持自定义安装路径。\n   - 目录结构：描述了安装后的文件组织，包括算子二进制文件（.o）、配置索引（binary_info_config.json）、卸载脚本等。\n   - 卸载：支持单个Kernel包卸载（执行对应目录下的uninstall.sh）或全量卸载（执行ai_core目录下的uninstall.sh）。\n   - 权限与覆盖规则：指出默认目录权限为770，多包安装时同名算子以后安装者为准。\n\n5. **调试版本编译功能**：说明如何通过两种方式生成调试版Kernel包：\n   - 基于dump目录（-p参数）；\n   - 基于具体kernel_name（-k参数，适用于错误日志中已知算子名称的场景）。\n   同时介绍了不同编程框架（PyTorch与ACL C++接口）下获取算子统计信息的方法，并强调--op_debug_config/-d参数用于指定调试配置文件路径。\n\n整体内容聚焦于算子编译、静态Kernel包管理及调试支持，旨在帮助开发者优化模型在Ascend NPU上的执行性能。"
+            }
+          ]
+        },
+        {
+          "title": "调试版本编译",
+          "node_id": "0007",
+          "start_index": 14,
+          "end_index": 14,
+          "summary": "该部分文档主要涵盖两个核心内容：一是如何卸载已安装的AI Core Kernel包，包括进入指定目录并以运行用户身份执行uninstall.sh脚本，卸载后ai_core目录下的所有内容将被清除；二是调试版本的算子编译方法，详细说明了使用op_compiler工具进行Kernel包生成的两种方式——通过指定算子信息统计文件目录（--op_params_dir/-p）或直接指定算子名称（--kernel_name/-k），并介绍了相关参数的使用规则、Dump算子信息的两种途径（PyTorch Profiler接口和acl接口）、调试配置文件（--op_debug_config/-d）的设置，以及其他常用编译选项如soc_version、log级别、并发任务数和输出路径等。",
+          "nodes": [
+            {
+              "title": "算子编译生成 Kernel包",
+              "node_id": "0008",
+              "start_index": 14,
+              "end_index": 15,
+              "summary": "该部分文档主要介绍了华为CANN平台下AI Core相关组件的卸载方法以及调试版本Kernel包的编译、安装与卸载流程。主要内容包括：  \n1. **卸载操作**：通过在指定目录（${install_path}/opp/static_kernel/ai_core/）下以运行用户身份执行uninstall.sh脚本，可删除ai_core目录下所有内容并卸载已安装的Kernel包。  \n2. **调试版本编译**：  \n   - 使用op_compiler工具进行算子编译，支持两种输入方式：通过--op_params_dir（-p）指定Dump工具导出的算子信息统计文件目录，或通过--kernel_name（-k）直接指定算子名称（二者必选其一）。  \n   - 详细说明了各编译参数的含义和用法，包括调试配置文件（--op_debug_config/-d）、AI处理器型号（--soc_version/-v）、日志级别（--log/-l）、并发进程数（--job/-j）和输出路径（--output/-o）。  \n   - 提供了PyTorch和ACL编程接口下获取算子Dump文件的方法。  \n3. **Kernel包安装与卸载**：  \n   - 编译生成的.run安装包默认安装到${install_path}/opp/debug_kernel目录，不支持自定义安装路径。  \n   - 安装成功后生成包含算子二进制文件、索引配置及通用脚本的目录结构。  \n   - 文档还提示了安装目录权限问题及默认命名规则。"
+            },
+            {
+              "title": "Kernel 包安装和卸载",
+              "node_id": "0009",
+              "start_index": 15,
+              "end_index": 16,
+              "summary": "该部分文档主要介绍了算子编译工具的配置参数使用方法及调试版Kernel包的安装与卸载流程。首先详细说明了关键命令行参数，包括必选的--soc_version（用于指定AI处理器型号）、可选的--log（日志级别）、--job（编译进程数）和--output（输出路径与文件名），并提供了soc_version的查询方式和默认行为。随后描述了编译成功的提示信息及使用限制（如禁止在dump_dir下执行编译）。接着，文档阐述了调试版Kernel包（.run文件）的安装步骤、默认安装路径（${install_path}/opp/debug_kernel）、权限要求、目录结构组成（包含算子二进制文件、配置索引和脚本等），以及卸载方法。特别指出多个Kernel包安装时存在覆盖行为，且当前不支持指定目录安装。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "参数说明",
+      "node_id": "0010",
+      "start_index": 17,
+      "end_index": 17,
+      "summary": "该部分文档主要介绍了算子编译工具的参数说明，包括参数概览、帮助选项、输入选项、输出选项、目标芯片选项和调试选项。其中详细列出了各参数的名称、简要描述、是否必选及默认值，并特别说明了输入选项中“--op_params_dir”和“--kernel_name”两个参数为二选一的必选关系。文档还指出“--kernel_name”仅支持调试版本编译，需配合“--op_debug_config”参数使用。整体内容旨在指导用户正确配置和使用算子编译工具的各项参数。",
+      "nodes": [
+        {
+          "title": "参数概览",
+          "node_id": "0011",
+          "start_index": 17,
+          "end_index": 18,
+          "summary": "该部分文档详细说明了CANN社区版算子编译工具（OPC）的各类命令行参数。主要内容包括：参数概览表格，列出各参数名称、简要描述、是否必选及默认值；帮助选项（--help）用于显示帮助信息；输入选项（如--op_params_dir和--kernel_name，二者必选其一）指定算子输入来源；输出选项（--output）定义编译结果的输出路径和文件名；目标芯片选项（--soc_version）用于指定AI处理器型号，在执行编译时为必填项；调试选项涵盖日志级别（--log）、算子统计（--count）和调试配置文件路径（--op_debug_config）。此外，还介绍了其他可选参数，如工作进程数（--job）、调优模式（--compile_mode）和Super Kernel功能开关（--enable_super_kernel）。"
+        },
+        {
+          "title": "帮助选项",
+          "node_id": "0012",
+          "start_index": 18,
+          "end_index": 18,
+          "summary": "The partial document outlines key command-line parameters for a CANN operator compilation tool. It details optional and required arguments, their descriptions, default values, and usage contexts. Main points include: specifying the number of compilation worker processes (--job); enabling tuning mode (--compile_mode) or Super Kernel functionality (--enable_super_kernel); defining output paths for compiled packages (--output); mandating AI processor model specification during operator compilation (--soc_version); configuring log levels (--log); counting operator JSON files (--count); and providing debug configuration files (--op_debug_config). It also notes the help option (--help/-h) for displaying usage information.",
+          "nodes": [
+            {
+              "title": "--help",
+              "node_id": "0013",
+              "start_index": 18,
+              "end_index": 19,
+              "summary": "The partial document outlines key parameters for the CANN community edition operator compilation tool. It covers mandatory and optional command-line options used during operator compilation, including: specifying the number of compilation worker processes (--job), enabling tuning mode (--compile_mode), activating Super Kernel functionality (--enable_super_kernel), defining output package path and name (--output), designating the AI processor model (--soc_version, required only for operator compilation), setting log levels (--log), counting operator JSON files (--count), and providing a debug configuration file path (--op_debug_config). It also details input options such as --op_params_dir (required unless --kernel_name is used) and help functionality (--help). Each parameter includes information on whether it is mandatory, its default value, and brief usage notes."
+            }
+          ]
+        },
+        {
+          "title": "输入选项",
+          "node_id": "0014",
+          "start_index": 19,
+          "end_index": 19,
+          "summary": "该部分文档主要介绍了算子编译工具（op_compiler）的输入选项参数 --op_params_dir。内容包括其功能说明（与 --kernel_name 二选一必选，用于指定 Dump 工具导出统计数据的文件夹路径，支持绝对和相对路径，简写为 -p）、允许的参数取值字符范围（大小写字母、数字、下划线、中划线、句点及中文字符），并指出该参数无关联参数、无推荐配置及收益。此外，文档还列出了该工具所支持的硬件型号，包括 Atlas 推理系列、Atlas 训练系列、Atlas A2 系列以及 Ascend 950PR/Ascend 950DT。",
+          "nodes": [
+            {
+              "title": "--op_params_dir",
+              "node_id": "0015",
+              "start_index": 19,
+              "end_index": 20,
+              "summary": "该部分文档主要介绍了华为CANN社区版算子编译工具（op_compiler）的两个关键输入参数：--op_params_dir 和 --kernel_name。两者为二选一必选项，用于指定算子编译所需的输入来源。其中，--op_params_dir 用于指定Dump工具导出的统计数据所在目录路径，支持多种字符和路径格式；--kernel_name 用于指定需编译的调试版算子名称，通常从报错日志中获取，并需与 --op_debug_config 参数配合使用。文档还列出了这两个参数的示例用法、支持的硬件型号（包括Atlas系列和Ascend 950系列），并注明无关联参数、推荐配置及依赖约束。"
+            },
+            {
+              "title": "--kernel_name",
+              "node_id": "0016",
+              "start_index": 20,
+              "end_index": 21,
+              "summary": "该部分文档主要介绍了华为CANN社区版算子编译工具（op_compiler）的几个关键命令行参数及其使用说明。主要内容包括：\n\n1. **--op_params_dir**：用于指定算子参数目录，与--kernel_name互斥且必选其一，适用于编译调试版本的算子。\n2. **--kernel_name（简写 -k）**：用于指定需编译的调试算子名称，通常从报错日志中获取，需配合--op_debug_config使用。\n3. **--job（简写 -j）**：设置编译时的工作进程数，默认为16，最小值为1，用于控制并行编译性能。\n4. **--compile_mode（简写 -m）**：设置工作模式，默认为纯编译模式，可选值为“tune”以启用调优模式。\n\n每个参数均列出了功能说明、关联参数、取值方式、示例用法、支持的硬件型号（如Atlas系列和Ascend 950系列）以及依赖约束（均为“无”）。文档强调这些参数主要用于算子调试和编译优化场景。"
+            },
+            {
+              "title": "--job",
+              "node_id": "0017",
+              "start_index": 21,
+              "end_index": 21,
+              "summary": "该部分文档主要介绍了两个编译工具命令行参数：--job 和 --compile_mode。其中，--job（简写 -j）用于设置编译时的工作进程数，最小值为1，默认值为16，并给出了使用示例及支持的硬件型号；--compile_mode（简写 -m）用于指定工作模式，默认为纯编译模式，可选值包括 tune（调优模式）。两者的“依赖约束”和“关联参数”均标注为“无”，且未提供推荐配置及收益说明。文档还列出了支持的 Atlas 和 Ascend 系列产品型号。"
+            },
+            {
+              "title": "--compile_mode",
+              "node_id": "0018",
+              "start_index": 21,
+              "end_index": 22,
+              "summary": "该部分文档主要介绍了算子编译工具（op_compiler）的三个命令行参数：--job、--compile_mode 和 --enable_super_kernel。  \n- --job 用于设置编译时的工作进程数，最小值为1，默认为16，简写为 -j，适用于多种 Atlas 和 Ascend 硬件型号。  \n- --compile_mode 用于指定工作模式，默认为纯编译模式，可选 tune（调优模式），简写为 -m；仅 Atlas A2 系列支持该参数，并附带调优模式下的使用约束，如不允许多用户同时调优同一设备、需关闭 Profiling 功能等。  \n- --enable_super_kernel 用于启用 Super Kernel 功能，无参数取值，添加即生效；该功能仅在部分硬件上有效，Atlas 推理/训练系列及 Ascend 950PR/950DT 均不支持。  \n每个参数均列出了功能说明、参数取值、示例用法和支持的硬件型号，部分参数包含依赖约束或使用限制。"
+            },
+            {
+              "title": "--enable_super_kernel",
+              "node_id": "0019",
+              "start_index": 22,
+              "end_index": 23,
+              "summary": "该部分文档主要介绍了华为Ascend算子编译工具（op_compiler）中几个关键参数的详细说明，包括功能、用法、支持的硬件型号及相关约束条件。主要内容涵盖：\n\n1. **调优模式（--compile_mode=tune）**：说明其使用约束，如不支持多用户同时在同一设备上调优，且调优前需关闭Profiling功能。\n\n2. **Super Kernel功能开关（--enable_super_kernel）**：描述该选项用于启用Super Kernel编译流程，默认不开启；强调该选项通常由上层框架（如torchair）自动控制，而非用户直接设置；并列出仅Atlas A2系列支持该参数，其他Ascend芯片及Atlas系列产品不支持。\n\n3. **输出路径参数（--output / -o）**：说明用于指定编译输出安装包的路径和文件名，支持相对或绝对路径及多种字符格式；若未指定，则在当前目录下按默认命名规则生成静态或调试版本的安装包；该参数适用于所有列出的Atlas和Ascend硬件型号。\n\n整体内容聚焦于参数的功能说明、适用范围、配置示例及使用限制，面向开发者提供操作指导。"
+            }
+          ]
+        },
+        {
+          "title": "输出选项",
+          "node_id": "0020",
+          "start_index": 23,
+          "end_index": 23,
+          "summary": "该部分文档主要介绍了算子编译工具（op_compiler）中与“--output”参数相关的配置说明。内容涵盖该参数的功能（指定编译输出安装包的路径和文件名）、默认行为（未指定路径时在当前目录生成，默认文件命名规则）、参数格式要求（支持相对/绝对路径及多种字符）、简写形式（-o），以及适用的硬件型号（包括Atlas A2训练/推理系列、Ascend 950PR/950DT等）。此外，还简要提及该参数无关联参数、无推荐配置，并提供了使用示例。文档同时指出某些参数（如Super Kernel相关选项）不由用户直接控制，需通过torchair层显式传递使能信息才能生效。",
+          "nodes": [
+            {
+              "title": "--output",
+              "node_id": "0021",
+              "start_index": 23,
+              "end_index": 24,
+              "summary": "该部分文档主要介绍了华为Ascend AI处理器相关的算子编译工具（op_compiler）的若干关键参数选项及其使用说明。主要内容包括：\n\n1. **Super Kernel支持情况**：说明Atlas A2系列（训练/推理）支持Super Kernel相关参数，而Ascend 950PR/950DT不支持；同时指出该功能通常不由用户直接控制，需通过torchair层识别代码或显式传递使能信息才会激活。\n\n2. **输出选项（--output / -o）**：用于指定编译生成的安装包路径和文件名，支持相对或绝对路径及多种字符格式；若未指定，默认在当前目录生成带时间戳和进程ID的默认命名文件（如static_kernel或debug_kernel开头）。\n\n3. **目标芯片选项（--soc_version / -v）**：为必选参数，用于指定AI处理器型号；文档提供了通过npu-smi info命令查询具体型号的方法，并列出支持的硬件平台，包括Atlas训练/推理系列、Atlas A2系列及Ascend 950PR/950DT。\n\n4. **调试选项（--log / -l）**：用于设置编译过程中的日志级别。\n\n此外，文档还列出了各参数的关联参数、取值格式、默认值、依赖约束和支持的硬件型号，并包含配置示例。整体内容属于《算子编译工具用户指南》中关于参数说明的部分。"
+            }
+          ]
+        },
+        {
+          "title": "目标芯片选项",
+          "node_id": "0022",
+          "start_index": 24,
+          "end_index": 24,
+          "summary": "该部分文档主要介绍了算子编译工具中的两个关键参数选项：  \n1. **--soc_version（简写 -v）**：用于指定AI处理器型号，是执行算子编译时的必选参数。文档说明了如何通过npu-smi info命令查询处理器型号，并在结果前添加“Ascend”前缀以获得正确的配置值，同时列出了支持的Atlas和Ascend系列硬件型号。  \n2. **--log（简写 -l）**：用于设置算子编译过程中的日志级别。  \n两部分均标明无依赖约束和关联参数，其中--soc_version部分未提供推荐配置及收益信息。",
+          "nodes": [
+            {
+              "title": "--soc_version",
+              "node_id": "0023",
+              "start_index": 24,
+              "end_index": 24,
+              "summary": "该部分文档主要介绍了算子编译工具的两个参数选项：  \n1. **--soc_version（简写 -v）**：用于指定AI处理器型号，是执行算子编译时的必选参数。文档说明了如何通过npu-smi info命令查询处理器型号，并在“Name”前添加“Ascend”作为实际配置值，同时列出了支持的Atlas和Ascend系列硬件型号。  \n2. **--log（简写 -l）**：用于设置算子编译过程中的日志级别。  \n两部分均标明无依赖约束和关联参数，其中--soc_version部分未提供推荐配置及收益信息。"
+            }
+          ]
+        },
+        {
+          "title": "调试选项",
+          "node_id": "0024",
+          "start_index": 24,
+          "end_index": 24,
+          "summary": "该部分文档主要介绍了算子编译工具中的两个参数选项：一是“--soc_version”（简写为 -v），用于指定AI处理器型号，是执行算子编译时的必选参数，并说明了如何通过npu-smi info命令查询具体型号及格式要求；二是“--log”（简写为 -l），用于设置算子编译过程中的日志级别。文档还列出了支持的硬件型号，包括Atlas推理与训练系列产品以及Ascend 950系列，并指出这两个参数均无依赖约束和关联参数。",
+          "nodes": [
+            {
+              "title": "--log",
+              "node_id": "0025",
+              "start_index": 24,
+              "end_index": 25,
+              "summary": "该部分文档主要介绍了算子编译工具的两个关键参数选项及其使用说明：  \n1. **--soc_version（简写 -v）**：用于指定AI处理器型号，是执行算子编译时的必选参数。文档说明了如何通过npu-smi info命令查询处理器型号，并在名称前添加“Ascend”作为实际配置值，同时列出了支持的Atlas和Ascend系列硬件型号。  \n2. **--log（简写 -l）**：用于设置编译过程中的日志级别，包括debug、info、warning、error四个等级，默认不输出日志。文档详细说明了日志落盘路径、如何通过环境变量启用日志打印，以及使用示例。  \n此外，还简要提及**--count**参数，用于配合--op_params_dir统计指定目录下算子信息JSON文件的数量。所有参数均无依赖约束。"
+            },
+            {
+              "title": "--count",
+              "node_id": "0026",
+              "start_index": 25,
+              "end_index": 26,
+              "summary": "该部分文档主要介绍了华为Ascend平台算子编译工具（op_compiler）的相关日志配置与命令行参数说明。主要内容包括：  \n1. **日志落盘**：说明日志默认存储路径为 $HOME/ascend/log/debug/plog/plog-pid_*.log，其中 pid 为进程 ID，* 为时间戳。  \n2. **日志打印**：介绍如何通过设置环境变量 ASCEND_SLOG_PRINT_TO_STDOUT=1 启用日志输出到标准输出，并详细列出日志级别（debug、info、warning、error）及其对应输出内容，默认不输出日志。  \n3. **--count 参数**：用于统计由 --op_params_dir 指定目录下算子信息 JSON 文件的数量，需与 --op_params_dir 配合使用。  \n4. **--op_debug_config 参数**：用于指定调试配置文件的路径和文件名，支持多种字符格式，并可配置如 oom（检测 Global Memory 内存越界）等调试选项；启用相关选项后，会在 kernel_meta 目录中保留 .o 和 .json 文件。  \n所有功能均适用于 Atlas 推理/训练系列、Atlas A2 系列及 Ascend 950PR/950DT 硬件型号，且无依赖约束。"
+            },
+            {
+              "title": "--op_debug_config",
+              "node_id": "0027",
+              "start_index": 26,
+              "end_index": 28,
+              "summary": "该部分文档主要介绍了两个命令行参数：`--op_params_dir`（简略提及，无详细配置和收益说明）和 `--op_debug_config`。重点详述了 `--op_debug_config` 参数的功能、取值格式、支持的调试选项及其作用，包括 oom（内存越界检测）、dump_bin、dump_cce、dump_loc、ccec_O0、ccec_g 和 check_flag 等。文档说明了各选项在算子编译过程中生成的文件类型、插入的调试代码逻辑，以及运行时可能触发的错误信息。同时列出了使用约束，如 ccec_O0 与 oom 不可共用、oom 与 NPU_COLLECT_PATH 环境变量冲突、动态 Shape 场景下避免使用 ccec 编译选项等。此外，提供了配置文件示例和命令行使用方式，并明确了该参数在不同 Atlas 和 Ascend 硬件型号上的支持情况。"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "page": 1,
+      "content": "CANN社区版\n9.1.0-beta1\n算子编译工具用户指南\n文档版本 01\n发布日期 2026-05-20\n华为技术有限公司"
+    },
+    {
+      "page": 2,
+      "content": " \n \n版权所有  © 华为技术有限公司  2026。 保留一切权利。\n非经本公司书面许可，任何单位和个人不得擅自摘抄、复制本文档内容的部分或全部，并不得以任何形式传\n播。\n \n商标声明\n和其他华为商标均为华为技术有限公司的商标。\n本文档提及的其他所有商标或注册商标，由各自的所有人拥有。\n \n注意\n您购买的产品、服务或特性等应受华为公司商业合同和条款的约束，本文档中描述的全部或部分产品、服务或\n特性可能不在您的购买或使用范围之内。除非合同另有约定，华为公司对本文档内容不做任何明示或暗示的声\n明或保证。\n由于产品版本升级或其他原因，本文档内容会不定期进行更新。除非另有约定，本文档仅作为使用指导，本文\n档中的所有陈述、信息和建议不构成任何明示或暗示的担保。\n  \n \n \n \n \n \n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 i"
+    },
+    {
+      "page": 3,
+      "content": " \n \n安全声明\n \n产品生命周期政策\n华为公司对产品生命周期的规定以“产品生命周期终止政策”为准，该政策的详细内容请参见如下网址：\nhttps://support.huawei.com/ecolumnsweb/zh/warranty-policy\n \n漏洞处理流程\n华为公司对产品漏洞管理的规定以“漏洞处理流程”为准，该流程的详细内容请参见如下网址：\nhttps://www.huawei.com/cn/psirt/vul-response-process\n如企业客户须获取漏洞信息，请参见如下网址：\nhttps://securitybulletin.huawei.com/enterprise/cn/security-advisory\n \n华为初始证书权责说明\n华为公司对随设备出厂的初始数字证书，发布了“华为设备初始数字证书权责说明”，该说明的详细内容请参\n见如下网址：\nhttps://support.huawei.com/enterprise/zh/bulletins-service/ENEWS2000015766\n \n华为企业业务最终用户许可协议 (EULA)\n本最终用户许可协议是最终用户（个人、公司或其他任何实体）与华为公司就华为软件的使用所缔结的协议。\n最终用户对华为软件的使用受本协议约束，该协议的详细内容请参见如下网址：\nhttps://e.huawei.com/cn/about/eula\n \n产品资料生命周期策略\n华为公司针对随产品版本发布的售后客户资料（产品资料），发布了“产品资料生命周期策略”，该策略的详\n细内容请参见如下网址：\nhttps://support.huawei.com/enterprise/zh/bulletins-website/ENEWS2000017760\n \n \n \n \n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 ii"
+    },
+    {
+      "page": 4,
+      "content": "目 录\n1 简介..............................................................................................................................................1\n2 使用方法 ......................................................................................................................................5\n2.1 使用前准备 ................................................................................................................................................................................. 5\n2.2 静态shape编译........................................................................................................................................................................ 7\n2.2.1 算子编译生成 Kernel包...................................................................................................................................................... 7\n2.2.2 Kernel 包安装和卸载 ............................................................................................................................................................8\n2.3 调试版本编译 ...........................................................................................................................................................................10\n2.3.1 算子编译生成 Kernel包.................................................................................................................................................... 10\n2.3.2 Kernel 包安装和卸载 ......................................................................................................................................................... 11\n3 参数说明 ....................................................................................................................................13\n3.1 参数概览 ................................................................................................................................................................................... 13\n3.2 帮助选项 ................................................................................................................................................................................... 14\n3.2.1 --help..................................................................................................................................................................................... 14\n3.3 输入选项 ................................................................................................................................................................................... 15\n3.3.1 --op_params_dir................................................................................................................................................................. 15\n3.3.2 --kernel_name.................................................................................................................................................................... 16\n3.3.3 --job........................................................................................................................................................................................17\n3.3.4 --compile_mode................................................................................................................................................................. 17\n3.3.5 --enable_super_kernel......................................................................................................................................................18\n3.4 输出选项 ................................................................................................................................................................................... 19\n3.4.1 --output................................................................................................................................................................................ 19\n3.5 目标芯片选项 ...........................................................................................................................................................................20\n3.5.1 --soc_version....................................................................................................................................................................... 20\n3.6 调试选项 ................................................................................................................................................................................... 20\n3.6.1 --log........................................................................................................................................................................................20\n3.6.2 --count...................................................................................................................................................................................21\n3.6.3 --op_debug_config ............................................................................................................................................................ 22CANN社区版\n算子编译工具用户指南 目 录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 iii"
+    },
+    {
+      "page": 5,
+      "content": "1 简介\n算子编译工具（ op_compiler ）是昇腾CANN提供的编译算子生成算子二进制文件的命\n令行工具。该工具的具体功能和使用约束如下：\n具体功能：\n●静态shape编译功能： 通过单算子 API执行的方式调用算子，算子 shape固定或者\n变化较少时，可以使用该工具编译静态 Kernel包并安装，提升算子调用的性能；\n如果需要对算子调用进一步进行性能优化，可以开启调优模式。\n本文档仅介绍算子编译工具的使用方法，具体的场景样例请参见《 算子库》中的\n“使用静态 Kernel提升算子执行性能”章节。\n●调试版本编译功能 。定位算子问题时，可以使用该工具编译调试版本的二进制，\n用于问题复现和定位。\n使用约束 ：\n●静态shape编译\n–（默认）静态编译模式支持的产品型号：\n▪Atlas 推理系列产品\n▪Atlas 训练系列产品\n▪Atlas A2 训练系列产品 /Atlas A2 推理系列产品\n▪Ascend 950PR/Ascend 950DT\n–调优模式相关的使用约束如下：\n▪产品型号支持度：\n○Atlas 推理系列产品，不支持\n○Atlas 训练系列产品，不支持\n○Atlas A2 训练系列产品 /Atlas A2 推理系列产品，支持\n○Ascend 950PR/Ascend 950DT ，不支持\n▪不支持不同用户同时使用同一 device进行调优。\n▪调优前，请确保关闭 Profiling 功能，避免影响调优结果。关闭 Profiling 功\n能具体操作请参见《 性能调优工具 》。CANN社区版\n算子编译工具用户指南 1 简介\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 1"
+    },
+    {
+      "page": 6,
+      "content": "●调试版本编译\n支持的产品型号：\n– Atlas 推理系列产品，支持\n– Atlas 训练系列产品，支持\n– Atlas A2 训练系列产品 /Atlas A2 推理系列产品，支持\n– Ascend 950PR/Ascend 950DT ，不支持\n工具功能架构\n算子编译工具的功能架构如 图1-1所示。\n图1-1 算子编译工具功能架构\n1.开发者在执行此工具时，需要向此工具传入算子信息统计文件或者算子\nkernel_name （仅调试场景支持传入 kernel_name ）以及其他参数。CANN社区版\n算子编译工具用户指南 1 简介\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 2"
+    },
+    {
+      "page": 7,
+      "content": "2.传入算子信息统计文件的场景下，算子编译工具获取该文件并解析。\n3.判断开发者是否开启了调试版本编译选项：\na.如果开启，则进行调试版本编译，根据实际运行时使用的是静态 shape还是动\n态shape编译出对应的调试版本。\nb.如果没有开启，判断开发者是否开启了调优编译参数，未开启调优编译参\n数，执行默认的静态 shape编译流程；开启调优编译参数，则执行调优编译流\n程。\n4.算子编译工具编译生成 Kernel文件并打包成算子 Kernel包。\n静态编译\n静态编译是指在编译时指定 shape大小，运行时不需要指定 shape大小。算子编译工具\n进行静态编译时，根据输入的算子信息统计文件，得到确定的 shape信息，针对每一个\nshape都编译出一个算子二进制，编译原理如下图所示：\n静态编译有如下优势：\n●编译时决定所有 tensor的大小，存储空间利用率高。\n●编译时可以针对实际的 shape大小做针对性优化。\n● AI处理器擅长并行指令运行，不擅长逻辑计算，如果有太多的 Scalar操作可能会打\n断并行指令的运行，从而导致性能下降。静态编译可以在编译时完成标量的计\n算，一定程度上可以提升性能。\n●编译工具在编译时知道确切的操作数据大小，不会额外插入同步，不会导致并行\n执行多个指令变成串行执行，一定程度上可以提升性能。\n调优编译\n如果想要进一步提升算子性能，可以使用算子编译工具的调优模式，尝试进行算子调\n优。CANN社区版\n算子编译工具用户指南 1 简介\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 3"
+    },
+    {
+      "page": 8,
+      "content": "调试版本编译\n在算子二进制的使用过程中，如果出现 AICore Error 或者内存越界等问题，可以编译出\n包含相关调试信息的调试版本，用于分析和定位问题。CANN社区版\n算子编译工具用户指南 1 简介\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 4"
+    },
+    {
+      "page": 9,
+      "content": "2 使用方法\n2.1 使用前准备\n2.2 静态shape编译\n2.3 调试版本编译\n2.1 使用前准备\n环境准备\n步骤1安装软件包。请参考《 CANN 软件安装 》完成驱动、固件、 CANN软件包的安装。\n步骤2配置环境变量。当前算子编译工具依赖 AOE工具，所以需要配置 CANN软件基础环境变\n量和AOE工具所需的环境变量。\n● CANN 软件基础环境变量\nCANN提供进程级环境变量设置脚本，供用户在进程中引用，以自动完成环境变\n量设置。执行命令参考如下，以下示例均为 root或非root用户默认安装路径，请以\n实际安装路径为准。\n# 以root用户安装 toolkit包后配置环境变量\nsource /usr/local/Ascend/cann/set_env.sh \n# 以非root用户安装 toolkit包后配置环境变量\nsource ${HOME}/Ascend/cann/set_env.sh \n● AOE 工具依赖 Python，以Python3.7.5 为例，请以运行用户执行如下命令设置\nPython3.7.5 的相关环境变量。\n#用于设置 python3.7.5 库文件路径\nexport LD_LIBRARY_PATH=/usr/local/python3.7.5/lib:$LD_LIBRARY_PATH\n#如果用户环境存在多个 python3版本，则指定使用 python3.7.5 版本\nexport PATH=/usr/local/python3.7.5/bin:$PATH\nPython3.7.5 安装路径请根据实际情况进行替换，您也可以将以上命令写入\n~/.bashrc 文件中，然后执行 source ~/.bashrc 命令使其立即生效。\n●调优前也可参考如下示例配置其他环境变量，但为可选配置，相关说明请参考 表\n2-1。\nexport ASCEND_DEVICE_ID=0\nexport TUNE_BANK_PATH=/home/HwHiAiUser/custom_tune_bank\nexport TE_PARALLEL_COMPILER=8\nexport REPEAT_TUNE=FalseCANN社区版\n算子编译工具用户指南 2 使用方法\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 5"
+    },
+    {
+      "page": 10,
+      "content": "说明\n用户可将设置环境变量的命令写入自定义脚本，方便后续执行。\n表2-1 环境变量说明\n环境变量 说明\nASCEND_DE\nVICE_ID通过该环境变量指定 AI处理器的逻辑 ID。\n取值范围 [0,N-1]，默认为 0。其中 N为当前物理机 /虚拟机 /容器\n内的设备总数。\nTUNE_BANK\n_PATH可通过此环境变量指定调优后自定义知识库的存储路径。\n设置的存储路径必须为绝对路径或相对于执行 AOE调优引擎所\n在路径的相对路径，配置的路径需要为已存在的目录，且执行\n用户具有读、写、可执行权限。若配置的 TUNE_BANK_PATH 路\n径不存在或用户无权限，则调优进程会报错并退出。\n自定义知识库存放路径的优先级为：\nTUNE_BANK_PATH>ASCEND_CACHE_PATH> 默认，\nTUNE_BANK_PATH 和ASCEND_CACHE_PATH 详细信息请参考\n《环境变量参考 》。\n–算子自定义知识库\n▪若不配置此环境变量，请使用 env命令查询\nASCEND_CACHE_PATH 是否存在，若存在，自定义知识\n库存储在： ${ASCEND_CACHE_PATH}/aoe_data/$\n{soc_version} ；若不存在，自定义知识库默认存储在： $\n{HOME}/Ascend/latest/data/aoe/custom/op/$\n{soc_version} 。\n▪若配置此环境变量，则调优后的最优策略存储在配置路径\n的${soc_version} 。\n说明\n在多用户共享知识库场景下，共享知识库的用户需要设置\nTUNE_BANK_PATH 为同一路径，并且对配置的路径具有读、写权限。\n若调优时自定义了知识库路径，后续进行模型转换时，若想直接使用自\n定义知识库，也需要配置此环境变量。\nTE_PARALLE\nL_COMPILER算子编译所需环境变量。\n网络模型较大时，可通过配置此环境变量，开启算子的并行编\n译功能。\nTE_PARALLEL_COMPILER 的值代表算子编译进程数（配置为整\n数），当取值大于 1时开启算子的并行编译功能。开启 AOE调优\n场景下：配置不能超过 CPU核数*80%/AI处理器的个数，取值范\n围：1~32，默认值为 8。\n由于该环境变量能够加速算子编译，所以可以加快涉及算子编\n译的相关流程调优。CANN社区版\n算子编译工具用户指南 2 使用方法\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 6"
+    },
+    {
+      "page": 11,
+      "content": "环境变量 说明\nREPEAT_TU\nNE是否重新发起调优，此环境变量在开启子图调优或算子调优的\n场景下生效。\n如果知识库（内置或者自定义）中已经存在网络模型中的调优\ncase（针对某 shape的调优策略），则会跳过此 case的调优流\n程，若想重新发起调优，可设置此环境变量为 True。例如某些\n算子进行了逻辑的变更，如 GEMM算子新增了支持 ND的输入，\n该情况下需要设置此环境变量后，重新发起调优。\n取值范围： True或者False，默认值为 False。\n \n步骤3调试版本编译场景，需要开发者提前安装实际出现问题场景时安装的二进制包，包括\n静态二进制包和动态二进制包。\n----结束\n工具获取\n工具所在目录： ${INSTALL_DIR}/compiler/bin/op_compiler 。\n${INSTALL_DIR} 请替换为 CANN软件安装后文件存储路径。以 root用户安装为例，安\n装后文件默认存储路径为： /usr/local/Ascend/cann 。\n2.2 静态shape编译\n2.2.1 算子编译生成 Kernel包\n步骤1准备Dump的算子信息统计文件。目前支持两种方式 Dump算子json文件，请根据实际\n情况选择合适的方式。\n●使用PyTorch的Python接口编程时 ，可通过 Ascend PyTorch Profiler接口dump算\n子json文件，具体请参考“ Ascend PyTorch 调优工具 ”。\na.使用Ascend PyTorch Profiler接口开启 PyTorch训练时的性能数据采集。\n在训练前，开启扩展参数 experimental_config 中“算子信息统计功能”，即\n参数record_op_args 置为True。\nb.查看采集到的 PyTorch训练性能数据结果文件。\n训练结束后， Dump的算子信息统计文件默认在 {worker_name}_{ 时间\n戳}_ascend_pt_op_args/{pid} 目录下。\n●使用acl接口编程时 ，可通过 aclopStartDumpArgs 和aclopStopDumpArgs 接口将\n算子信息统计文件 Dump到指定目录下。\n步骤2在任意目录下，以运行用户（如 HwHiAiUser ）身份执行如下命令，进行算子编译：\n默认模式编译命令样例：\nop_compiler --op_params_dir= <dump_dir>   --soc_version= <soc_version>  --log=info --job=8 --\noutput= <output_dir>\n或\nop_compiler -p <dump_dir>   -v <soc_version>  -l info -j 8 -o <output_dir>\n调优模式编译命令样例：CANN社区版\n算子编译工具用户指南 2 使用方法\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 7"
+    },
+    {
+      "page": 12,
+      "content": "op_compiler --op_params_dir= <dump_dir>   --soc_version= <soc_version>  --log=info --job=8 --\ncompile_mode=tune --output= <output_dir>\n或\nop_compiler -p <dump_dir>   -v <soc_version>  -l info -j 8 -m tune -o <output_dir>\n● --op_params_dir ：简写为 -p，必选， Dump工具导出的统计数据所在的文件夹路\n径，支持绝对和相对路径。\n● --soc_version ：简写为 -v，执行算子编译功能时必选，指定算子编译时 AI处理器的\n型号。\n说明\n如果无法确定当前设备的 soc_version ，则在安装 NPU驱动包的服务器执行 npu-smi info 命\n令进行查询，在查询到的“ Name”前增加 Ascend信息，例如“ Name”对应取值为\nxxxyy，实际配置的 soc_version 值为Ascend xxxyy。\n● --log ：简写为 -l，可选，设置算子编译过程中日志的级别。可设置为 debug/info/\nwarning/error/null 级别，默认为 null。\n● --job ：简写为 -j，可选，设置编译时工作进程数。最小取值为 1，默认为 16。\n● --compile_mode ：简写为 -m，可选，取值支持配置为 tune，代表开启调优模式，\n执行调优编译流程。不使用该参数的情况下，执行默认编译流程。\n● --output ：简写为 -o，可选，编译输出的安装包路径 +名称，如 xxx/xxx/xxx.run ，\n支持相对路径和绝对路径。不输入路径的情况下，在当前路径下生成；不输入安\n装包名称的情况下，安装包默认命名为“ static_kernel_${datetime}_$\n{pid}.run ”。\n工具支持的全量参数的具体说明可参见 3 参数说明 。\n当出现类似如下回显信息代表编译成功。\ngenerate run package static_kernel_${datetime}_${pid}.run success\n----结束\n说明\n●算子编译工具提供了 --count参数和 -p参数配合使用，用于统计 -p参数指定的目录下算子信息\n统计json文件的数目。\n样例如下：\nop_compiler -p <dump_dir>  --count\n只有动态 shape才能dump出算子统计信息，安装静态 Kernel包后，静态 Kernel包对应算子的\n统计信息就不会 dump出来。所以在安装静态 Kernel包后，如果网络有调整，可以通过调整\n前后dump的json文件的数量来判断静态 Kernel包和当前网络是否匹配。\n通过调整网络前后，各执行一次 dump操作，并通过 --count命令来统计 dump生成的 json文\n件的数目，如果调整后的数目比调整前大，则说明静态 Kernel包中有部分算子不再匹配当前\n网络，此时开发者可以：\n●卸载静态 Kernel包，重新走 dump流程，编译安装新的静态 Kernel包。\n●仍使用当前静态 Kernel包，此时需要注意不匹配的算子会走动态流程，得不到性能收\n益。\n●不支持在 dump_dir 下执行编译命令。\n2.2.2 Kernel 包安装和卸载\n下文以默认命名的 Kernel包为例，实际运行时，具体命令请替换为实际的 Kernel包名\n称。CANN社区版\n算子编译工具用户指南 2 使用方法\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 8"
+    },
+    {
+      "page": 13,
+      "content": "步骤1安装静态 Kernel包。\n进入static_kernel_${datetime}_${pid}.run 包所在目录，以运行用户（如\nHwHiAiUser ）身份运行 run包：\n./static_kernel_${datetime}_${pid}.run\n当出现如下回显信息代表安装成功。\nVerifying archive integrity...  100%   SHA256 checksums are OK. All good.\nUncompressing STATIC KERNEL RUN PACKAGE  100%\n目前暂不支持指定目录安装， run包默认安装到 ${install_path}/opp/static_kernel 路径\n下，其中 ${install_path} 为CANN软件安装后文件存储路径，请根据实际情况替换该路\n径。\n说明\nrun包默认安装路径 ${install_path}/opp/static_kernel 的默认权限为 770（本用户、同组用户访\n问）。如果权限不足导致静态 Kernel包安装失败，可联系 CANN软件包的安装用户修改\nstatic_kernel 目录权限来解决。\nrun包安装后的目录结构样例如下，\n|-- ${install_path}/opp/static_kernel\n    |-- ai_core\n        |-- config                                 \n           |-- ascend xxxx\n               |-- binary_info_config.json             # 全量静态 Kernel包的总索引\n        |-- config.ini                                # 记录安装顺序的配置文件。\n        |-- static_kernel_250924103634186357_988879             # 时间戳为“ 250924103634186357 ”且进程号\n为\"988879\" 的静态 Kernel文件\n           |-- ascend xxxx\n           |   |-- Add                                 # 算子二进制目录\n           |      |-- static_kernel_Add_float16_NCL_xxxx_d0.json\n           |      |-- static_kernel_Add_float16_NCL_xxxx_d1.json  \n           |      |-- static_kernel_Add_float16_NCL_xxxx_d0.o\n           |      |-- static_kernel_Add_float16_NCL_xxxx_d1.o\n           |   |-- xxxx\n           |      |-- static_kernel_xxx.json\n           |      |-- static_kernel_xxx.o\n           |   |-- ......\n           |-- config                                 # 单个静态 Kernel包索引\n           |   |-- ascend xxxx\n           |       |-- binary_info_config.json      \n           |-- scripts                               # 工具涉及的通用脚本                           \n           |   |-- ......                         \n           |-- uninstall.sh                         # 单包卸载脚本   \n        |-- static_kernel_xxxx                     # 不同时间戳的静态 Kernel文件\n        |-- uninstall.sh                            # 全量卸载脚本\n        |-- version.info                             # 版本信息\n说明\n支持多个 Kernel包安装，如果多个包中存在相同的算子 Kernel，以后安装的 Kernel包为准。\n步骤2（可选）当不再需要静态 Kernel包时，可以单包卸载或全量卸载。\n●单包卸载\n进入static_kernel_${datetime}_${pid}.run 包的安装目录，以运行用户（如\nHwHiAiUser ）身份运行 uninstall.sh 。\ncd ${install_path}/opp/static_kernel/ai_core/static_kernel_${datetime}_${pid}\n./uninstall.sh\n卸载成功， ai_core目录下 static_kernel_${datetime}_${pid} 文件夹将会被删除。\n●全量卸载CANN社区版\n算子编译工具用户指南 2 使用方法\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 9"
+    },
+    {
+      "page": 14,
+      "content": "进入${install_path}/opp/static_kernel/ai_core 目录下，以运行用户（如\nHwHiAiUser ）身份运行 uninstall.sh 。\ncd ${install_path}/opp/static_kernel/ai_core/\n./uninstall.sh\n卸载成功， ai_core目录下所有内容将会被删除，所有已安装的 Kernel包均被卸\n载。\n----结束\n2.3 调试版本编译\n2.3.1 算子编译生成 Kernel包\n在任意目录下，以运行用户（如 HwHiAiUser ）身份执行如下命令，进行算子编译：\n传入dump的算子信息统计文件进行调试版本编译，编译命令样例：\nop_compiler --op_params_dir= <dump_dir>   --op_debug_config=gm_debug.cfg  --\nsoc_version= <soc_version>  --log=info --job=128 --output= <output_dir>  \n或\nop_compiler -p <dump_dir>   -d gm_debug.cfg -v  <soc_version>  -l info -j 128 -o <output_dir>\n传入kernel_name 进行调试版本编译，编译命令样例：\nop_compiler --kernel_name= <kernel_name>   --op_debug_config=gm_debug.cfg  --\nsoc_version= <soc_version>  --log=info --job=128  --output= <output_dir>\n或\nop_compiler -k <kernel_name>   -d gm_debug.cfg -v  <soc_version>  -l info -j 128 -o <output_dir>\n● --op_params_dir 和--kernel_name ，两个参数只能使用一个，为必选参数。在报\n错日志中能够获取到明确的算子 kernel_name 时，建议使用 kernel_name 参数。\n– --op_params_dir ：简写为 -p，Dump工具导出的统计数据所在的文件夹路\n径，支持绝对和相对路径。目前支持两种方式 Dump算子json文件，请根据实\n际情况选择合适的方式。\n▪使用PyTorch的Python接口编程时 ，可通过 Ascend PyTorch Profiler接\n口dump算子json文件，具体请参考“ Ascend PyTorch 调优工具 ”。\n1)使用Ascend PyTorch Profiler接口开启 PyTorch训练时的性能数据采\n集。\n在训练前，开启扩展参数 experimental_config 中“算子信息统计功\n能”，即参数 record_op_args 置为True。\n2)查看采集到的 PyTorch训练性能数据结果文件。\n训练结束后， Dump的算子信息统计文件默认在 {worker_name}_{ 时\n间戳}_ascend_pt_op_args/{pid}_debug 目录下。\n▪用acl接口编程时 ，可通过 aclopStartDumpArgs 和aclopStopDumpArgs\n接口将算子信息统计文件 Dump到指定目录下。\n– --kernel_name ：简写为 -k，在算子执行的报错日志中获取 kernel_name 。\n●--op_debug_config ：简写为 -d，调试配置文件的路径及文件名，路径支持绝对和\n相对路径。参数使用示例如下：\n--op_debug_config= $HOME/module/gm_debug.cfgCANN社区版\n算子编译工具用户指南 2 使用方法\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 10"
+    },
+    {
+      "page": 15,
+      "content": "配置文件的内容示例如下，具体的配置方法请参考 3.6.3 --op_debug_config 。\nop_debug_config=ccec_g,oom\n● --soc_version ：简写为 -v，执行算子编译功能时必选，配置为算子编译时 AI处理器\n的型号。\n说明\n如果无法确定当前设备的 soc_version ，则在安装 NPU驱动包的服务器执行 npu-smi info 命\n令进行查询，在查询到的“ Name”前增加 Ascend信息，例如“ Name”对应取值为\nxxxyy，实际配置的 soc_version 值为Ascend xxxyy。\n● --log ：简写为 -l，可选，设置算子编译过程中日志的级别。可设置为 debug/info/\nwarning/error/null 级别，默认为 null。\n● --job ：简写为 -j，可选，设置编译时工作进程数。最小取值为 1，默认为 16。\n● --output ：简写为 -o，可选，编译输出的安装包路径 +名称，如 xxx/xxx/xxx.run ，\n支持相对路径和绝对路径。不输入路径的情况下，在当前路径下生成；不输入安\n装包名称的情况下，安装包默认命名为“ debug_kernel_${datetime}.run ”。\n工具支持的全量参数的具体说明可参见 3 参数说明 。\n当出现类似如下回显信息代表编译成功。\ngenerate run package debug_kernel_${datetime}.run success\n说明\n不支持在 dump_dir 下执行编译命令。\n2.3.2 Kernel 包安装和卸载\n下文以默认命名的 Kernel包为例，实际运行时，具体命令请替换为实际的 Kernel包名。\n●安装调试版本的 Kernel包。\n进入debug_kernel_${datetime}.run 包所在目录，以运行用户（如 HwHiAiUser ）\n身份运行 run包：\n./debug_kernel_${datetime}.run\n当出现如下回显信息代表安装成功。\ninstallation complete.\n目前暂不支持指定目录安装， run包默认安装到 ${install_path}/opp/debug_kernel\n路径下，其中 ${install_path} 为CANN软件安装后文件存储路径。\n说明\nrun包默认安装路径 ${install_path}/opp/debug_kernel 的默认权限为 755。如果权限不足导\n致调试版本的 Kernel包安装失败，可联系 CANN软件包的安装用户修改 debug_kernel 目录\n权限来解决。\nrun包安装后的目录结构样例如下，\n|-- ${install_path}/opp/debug_kernel\n    |-- ascendxxxx\n    |   |-- gelu # 算子二进制目录\n    |       |-- Gelu_5c5e58e043224cccf51a06108010ae13_high_precision.json\n    |       |-- Gelu_5c5e58e043224cccf51a06108010ae13_high_precision.o\n    |-- config\n    |   |-- ascendxxxx\n    |       |-- binary_info_config.json   # 全量Kernel包的总索引\n    |       |-- gelu.json # 算子Kernel的索引\n    |-- scripts # 工具涉及的通用脚本\n    |   |-- common.py\n    |   |-- help.infoCANN社区版\n算子编译工具用户指南 2 使用方法\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 11"
+    },
+    {
+      "page": 16,
+      "content": "    |   |-- install.py\n    |   |-- uninstall.py\n    |-- uninstall.sh  # 卸载脚本\n    |-- version.info # 版本信息\n说明\n多个Kernel包安装的情况下，后安装的 Kernel包会覆盖已安装的 Kernel包。\n●卸载\n进入debug_kernel_${datetime}.run 包的安装目录，以运行用户（如\nHwHiAiUser ）身份运行 uninstall.sh 。\ncd ${install_path}/opp/debug_kernel\n./uninstall.sh\n卸载成功， debug_kernel 文件夹将会被删除。CANN社区版\n算子编译工具用户指南 2 使用方法\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 12"
+    },
+    {
+      "page": 17,
+      "content": "3 参数说明\n3.1 参数概览\n3.2 帮助选项\n3.3 输入选项\n3.4 输出选项\n3.5 目标芯片选项\n3.6 调试选项\n3.1 参数概览\n表3-1 算子编译工具参数概览\nOPC参数名称 参数简述（具体说明见参数描述\n章节）是否必选 默认值\n3.2.1 --help 显示帮助信息。 否 不涉及\n3.3.1 --\nop_params_dirDump工具导出的统计数据所在\n的文件夹路径，支持绝对和相对\n路径。是（3.3.1 --\nop_params_d\nir和\n3.3.2 --\nkernel_name\n二选一\n）不涉及\n3.3.2 --\nkernel_name算子kernel_name 。仅支持调试\n版本编译，需要和 --\nop_debug_config 参数配合使\n用。是（3.3.1 --\nop_params_d\nir和\n3.3.2 --\nkernel_name\n二选一\n）不涉及CANN社区版\n算子编译工具用户指南 3 参数说明\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 13"
+    },
+    {
+      "page": 18,
+      "content": "OPC参数名称 参数简述（具体说明见参数描述\n章节）是否必选 默认值\n3.3.3 --job 编译时工作进程数。最小取值为\n1。否 16\n3.3.4 --\ncompile_mode取值支持配置为 tune，代表开启\n调优模式，执行调优编译流程。\n不使用该参数的情况下，执行默\n认编译流程。否 不涉及\n3.3.5 --\nenable_super_k\nernel是否开启 Super Kernel 功能。 否 默认不使能\nSuper\nKernel。\n3.4.1 --output 编译输出的安装包路径 +名称，\n如xxx/xxx/xxx.run ，支持相对路\n径和绝对路径。否 工具执行的\n当前路径下\n生成\nstatic_kern\nel_$\n{datetime\n}_$\n{pid}.run/\ndebug_ker\nnel_$\n{datetime}.\nrun\n3.5.1 --\nsoc_version指定算子编译时 AI处理器的型\n号。是（仅执行算\n子编译功能时\n为必选）不涉及\n3.6.1 --log 设置算子编译过程中日志的级\n别。否 null\n3.6.2 --count 统计3.3.1 --op_params_dir 参数\n指定的目录下算子信息统计 json\n文件的数目。否 不涉及\n3.6.3 --\nop_debug_confi\ng调试配置文件的路径及文件名，\n路径支持绝对和相对路径。否 不涉及\n \n3.2 帮助选项\n3.2.1 --help\n功能说明\n显示帮助信息。简写为 -h。CANN社区版\n算子编译工具用户指南 3 参数说明\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 14"
+    },
+    {
+      "page": 19,
+      "content": "关联参数\n无。\n参数取值\n无。\n推荐配置及收益\n无。\n示例\nop_compiler --help\n支持的型号\nAtlas 推理系列产品\nAtlas 训练系列产品\nAtlas A2 训练系列产品 /Atlas A2 推理系列产品\nAscend 950PR/Ascend 950DT\n依赖约束\n无。\n3.3 输入选项\n3.3.1 --op_params_dir\n功能说明\n和--kernel_name 二选一必选， Dump工具导出的统计数据所在的文件夹路径，支持绝\n对和相对路径。简写为 -p。\n关联参数\n无。\n参数取值\n支持大小写字母（ a-z，A-Z）、数字（ 0-9）、下划线（ _）、中划线（ -）、句点\n（.）、中文字符。\n推荐配置及收益\n无。CANN社区版\n算子编译工具用户指南 3 参数说明\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 15"
+    },
+    {
+      "page": 20,
+      "content": "示例\nop_compiler --op_params_dir= <dump_dir>   --soc_version= <soc_version>\n支持的型号\nAtlas 推理系列产品\nAtlas 训练系列产品\nAtlas A2 训练系列产品 /Atlas A2 推理系列产品\nAscend 950PR/Ascend 950DT\n依赖约束\n无。\n3.3.2 --kernel_name\n功能说明\n和--op_params_dir 二选一必选，设置需要编译的调试版本的算子 kernel_name 。简写\n为-k。\nkernel_name 的获取方式如下：算子执行过程中出现报错，根据报错日志可以获取到\n出错算子的 kernel_name （搜索 kernel_name 关键字）。报错日志的获取方式请参考\n《日志参考 》。\n关联参数\n和3.6.3 --op_debug_config 参数配合使用。仅在编译调试版本的二进制时，可以使用\n该参数。\n参数取值\n在算子报错日志中搜索 kernel_name 关键字，找到报错的 kernel_name 。\n推荐配置及收益\n无。\n示例\nop_compiler --kernel_name=xxx  --soc_version= <soc_version>\n支持的型号\nAtlas 推理系列产品\nAtlas 训练系列产品\nAtlas A2 训练系列产品 /Atlas A2 推理系列产品\nAscend 950PR/Ascend 950DTCANN社区版\n算子编译工具用户指南 3 参数说明\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 16"
+    },
+    {
+      "page": 21,
+      "content": "依赖约束\n无。\n3.3.3 --job\n功能说明\n设置编译时工作进程数。最小取值为 1，默认为 16。简写为 -j。\n关联参数\n无\n参数取值\n设置编译时工作进程数。\n推荐配置及收益\n无。\n示例\nop_compiler --op_params_dir= <dump_dir>   --soc_version= <soc_version>  --job=128\n支持的型号\nAtlas 推理系列产品\nAtlas 训练系列产品\nAtlas A2 训练系列产品 /Atlas A2 推理系列产品\nAscend 950PR/Ascend 950DT\n依赖约束\n无。\n3.3.4 --compile_mode\n功能说明\n工作模式。可选。默认为纯编译模式，配置为 tune为调优模式。简写为 -m。\n关联参数\n无。\n参数取值\n取值支持配置为 tune。CANN社区版\n算子编译工具用户指南 3 参数说明\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 17"
+    },
+    {
+      "page": 22,
+      "content": "推荐配置及收益\n无。\n示例\nop_compiler --op_params_dir= <dump_dir>   --soc_version= Ascendxxxx  --log=info --job=128 --\ncompile_mode=tune --output= <output_dir>\n支持的型号\nAtlas 推理系列产品，不支持该参数\nAtlas 训练系列产品，不支持该参数\nAtlas A2 训练系列产品 /Atlas A2 推理系列产品，支持该参数\nAscend 950PR/Ascend 950DT ，不支持该参数\n依赖约束\n调优模式相关的使用约束如下：\n●不支持不同用户同时使用同一 device进行调优。\n●调优前，请确保关闭 Profiling 功能，避免影响调优结果。关闭 Profiling 功能具体操\n作请参见《 性能调优工具 》。\n3.3.5 --enable_super_kernel\n功能说明\n是否开启 Super Kernel 功能。默认不使能 Super Kernel ，添加该选项时会修改编译行\n为，走 Super Kernel 流程。\n关联参数\n无。\n参数取值\n无\n推荐配置及收益\n无。\n示例\nop_compiler --op_params_dir= <dump_dir>   --soc_version= <soc_version>   --enable_super_kernel\n支持的型号\nAtlas 推理系列产品，不支持该参数\nAtlas 训练系列产品，不支持该参数CANN社区版\n算子编译工具用户指南 3 参数说明\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 18"
+    },
+    {
+      "page": 23,
+      "content": "Atlas A2 训练系列产品 /Atlas A2 推理系列产品，支持该参数\nAscend 950PR/Ascend 950DT ，不支持该参数\n依赖约束\n该选项的使能通常不由用户直接控制。\n在torchair层会识别用户的代码或者手动开启 super kernel 对应的选项，只有在 torchair\n明确传递了 Super Kernel 使能信息的时候， op_compiler 才会添加该输入选项。\n3.4 输出选项\n3.4.1 --output\n功能说明\n可选，编译输出的安装包路径 +名称，如 xxx/xxx/xxx.run ，支持相对路径和绝对路径。\n不输入路径的情况下，在当前路径下生成；不输入安装包名称的情况下，静态 shape安\n装包默认命名为“ static_kernel_${datetime}_${pid}.run ”，调试版本安装包默认命名\n为“debug_kernel_${datetime}.run ”。简写为 -o。\n关联参数\n无。\n参数取值\n参数值： 编译输出的安装包路径 +名称。\n参数值格式： 支持相对路径和绝对路径，支持大小写字母（ a-z，A-Z）、数字\n（0-9）、下划线（ _）、中划线（ -）、句点（ .）、中文字符。\n默认值： 默认情况下在执行此工具的当前路径下生成 static_kernel_${datetime}.run/\ndebug_kernel_${datetime}_${pid}.run 。\n推荐配置及收益\n无。\n示例\nop_compiler --op_params_dir= <dump_dir>   --soc_version= Ascendxxxx  --log=info --job=128 --\ncompile_mode=tune --output= $HOME/opcompile/out/\n支持的型号\nAtlas 推理系列产品\nAtlas 训练系列产品\nAtlas A2 训练系列产品 /Atlas A2 推理系列产品\nAscend 950PR/Ascend 950DTCANN社区版\n算子编译工具用户指南 3 参数说明\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 19"
+    },
+    {
+      "page": 24,
+      "content": "依赖约束\n无。\n3.5 目标芯片选项\n3.5.1 --soc_version\n功能说明\n执行算子编译功能时必选，指定算子编译时 AI处理器的型号。简写为 -v。\n关联参数\n无。\n参数取值\n算子编译时 AI处理器的型号。\n如果无法确定当前 AI处理器的型号，则在安装 NPU驱动包的服务器执行 npu-smi info\n命令进行查询，在查询到的“ Name”前增加 Ascend信息，例如“ Name”对应取值为\nxxxyy，实际配置的 soc_version 值为Ascend xxxyy。\n推荐配置及收益\n无。\n支持的型号\nAtlas 推理系列产品\nAtlas 训练系列产品\nAtlas A2 训练系列产品 /Atlas A2 推理系列产品\nAscend 950PR/Ascend 950DT\n依赖约束\n无。\n3.6 调试选项\n3.6.1 --log\n功能说明\n设置算子编译过程中日志的级别。简写为 -l。CANN社区版\n算子编译工具用户指南 3 参数说明\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 20"
+    },
+    {
+      "page": 25,
+      "content": "●日志落盘\n日志默认落盘到如下路径： $HOME/ascend/log/ debug /plog/plog- pid_*.log\npid代表进程 ID，“*”表示该日志文件创建时的时间戳。\n●日志打印\n设置日志级别，开启日志功能后，日志默认不打印，如需打印显示，则请在执行\nop_compiler 命令的当前窗口设置如下环境变量，然后再执行 op_compiler 命令：\nexport ASCEND_SLOG_PRINT_TO_STDOUT=1\n关联参数\n无。\n参数取值\n参数值：\n● debug ：输出 debug/info/warning/error/event 级别的运行信息。\n● info ：输出 info/warning/error/event 级别的运行信息。\n● warning ：输出 warning/error/event 级别的运行信息。\n● error ：输出 error/event 级别的运行信息。\n参数默认值 ：默认情况下，不输出日志。\n推荐配置及收益\n无。\n示例\nop_compiler --op_params_dir= <dump_dir>   --soc_version= <soc_version>  --log=debug\n支持的型号\nAtlas 推理系列产品\nAtlas 训练系列产品\nAtlas A2 训练系列产品 /Atlas A2 推理系列产品\nAscend 950PR/Ascend 950DT\n依赖约束\n无\n3.6.2 --count\n功能说明\n和3.3.1 --op_params_dir 参数配合使用，用于统计 3.3.1 --op_params_dir 参数指定的\n目录下算子信息统计 json文件的数目。CANN社区版\n算子编译工具用户指南 3 参数说明\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 21"
+    },
+    {
+      "page": 26,
+      "content": "关联参数\n和3.3.1 --op_params_dir 参数配合使用。\n参数取值\n无\n推荐配置及收益\n无。\n示例\nop_compiler -p <dump_dir>  --count\n支持的型号\nAtlas 推理系列产品\nAtlas 训练系列产品\nAtlas A2 训练系列产品 /Atlas A2 推理系列产品\nAscend 950PR/Ascend 950DT\n依赖约束\n无\n3.6.3 --op_debug_config\n功能说明\n调试配置文件的路径及文件名。\n关联参数\n无。\n参数取值\n参数值： 配置文件路径及文件名。\n参数值格式： 路径和文件名：支持大小写字母（ a-z，A-Z）、数字（ 0-9）、下划线\n（_）、短横线（ -）、句点（ .）、中文汉字。\n参数值约束：\n配置文件中支持配置如下选项，多个选项使用英文逗号分隔。\n●oom：算子执行过程中，检测 Global Memory 是否内存越界。\n–配置该选项，算子编译时，在当前执行路径算子编译生成的 kernel_meta 文件\n夹中保留 .o（算子二进制文件）和 .json文件（算子描述文件）。CANN社区版\n算子编译工具用户指南 3 参数说明\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 22"
+    },
+    {
+      "page": 27,
+      "content": "–使用该选项后，在算子编译过程中会加入如下的检测逻辑，用户可以通过再\n使用dump_cce 参数，在生成的 .cce文件中查看如下的代码。\ninline __aicore__ void  CheckInvalidAccessOfDDR( xxx) {\n    if (access_offset  < 0 || access_offset  + access_extent > ddr_size) {\n        if (read_or_write == 1) {\n            trap(0X5A5A0001);\n        } else {\n            trap(0X5A5A0002);\n        }\n    }\n}\n实际执行推理过程中，如果确实存在内存越界，会抛出“ EZ9999”错误码。\n●dump_bin ：算子编译时，在当前执行路径算子编译生成的 kernel_meta 文件夹中\n保留.o（算子二进制文件）和 .json文件（算子描述文件）。\n●dump_cce ：算子编译时，在当前执行路径算子编译生成的 kernel_meta 文件夹中\n保留算子 cce文件*.cce，以及 .o（算子二进制文件）和 .json文件（算子描述文\n件）。\n●dump_loc ：算子编译时，在当前执行路径算子编译生成的 kernel_meta 文件夹中\n保留python-cce 映射文件 *_loc.json 。\n●ccec_O0 ：算子编译时，开启 ccec编译器选项 -O0，配置该选项 不会对调试信息执\n行优化操作，用于后续分析 AICore Error 问题。\n●ccec_g：算子编译时，开启 ccec编译器选项 -g，配置该选项 会对调试信息执行优\n化操作，用于后续分析 AICore Error 问题。\n●check_flag ：算子执行时，检测算子内部流水线同步信号是否匹配。\n–配置该选项，算子编译时，在当前执行路径算子编译生成的 kernel_meta 文件\n夹中保留 .o（算子二进制文件）和 .json文件（算子描述文件）。\n–使用该选项后，在算子编译过程中会加入如下的检测逻辑，用户可以通过再\n使用dump_cce 参数，在生成的 .cce文件中查看如下的代码。\n  set_flag(PIPE_MTE3,  PIPE_MTE2, EVENT_ID0);\n  set_flag(PIPE_MTE3,  PIPE_MTE2, EVENT_ID1);\n  set_flag(PIPE_MTE3,  PIPE_MTE2, EVENT_ID2);\n  set_flag(PIPE_MTE3,  PIPE_MTE2, EVENT_ID3);\n  ....\n  pipe_barrier(PIPE_MTE3);\n  pipe_barrier(PIPE_MTE2);\n  pipe_barrier(PIPE_M);\n  pipe_barrier(PIPE_V);\n  pipe_barrier(PIPE_MTE1);\n  pipe_barrier(PIPE_ALL);\n  wait_flag(PIPE_MTE3,  PIPE_MTE2, EVENT_ID0);\n  wait_flag(PIPE_MTE3,  PIPE_MTE2, EVENT_ID1);\n  wait_flag(PIPE_MTE3,  PIPE_MTE2, EVENT_ID2);\n  wait_flag(PIPE_MTE3,  PIPE_MTE2, EVENT_ID3);\n  ...\n实际执行推理过程中，如果确实存在算子内部流水线同步信号不匹配，则最\n终会在有问题的算子处超时报错，并终止程序 ，报错信息示例为：\nAicore kernel execute failed, ..., fault kernel_name= 算子名 ,...\nrtStreamSynchronizeWithTimeout execute failed....CANN社区版\n算子编译工具用户指南 3 参数说明\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 23"
+    },
+    {
+      "page": 28,
+      "content": "说明\n●配置ccec编译选项（即 ccec_O0、ccec_g选项）时，会导致算子 Kernel（*.o文件）大小增\n大。动态 Shape场景下，由于算子编译时会遍历可能的 Shape场景，因此可能会导致算子\nKernel文件过大而无法进行编译，此种场景下，建议不要配置 ccec编译选项。\n由于算子 Kernel文件过大而无法编译的报错日志示例如下：\nmessage:link error ld.lld: error: InputSection too large for range extension thunk  ./\nkernel_meta_xxxxx.o:\n● ccec编译选项 ccec_O0和oom选项不可同时开启，会导致 AICore Error 报错，报错信息示例如\n下：\n...there is an aivec error exception, core id is 49, error code = 0x4 ...\n● oom配置选项不支持和 NPU_COLLECT_PATH 环境变量同时使用，否则编译出的算子 Kernel\n包在使用过程中会出现报错。\n推荐配置及收益\n无。\n示例\n假设使能 Global Memory 内存检测功能的配置文件名称为 gm_debug.cfg ，文件内容配\n置示例如下：\nop_debug_config=ccec_g,oom\n将该文件上传到编译工具所在服务器，例如上传到 $HOME/module ，使用示例如下：\nop_compiler --kernel_name= <kernel_name>   --op_debug_config=gm_debug.cfg  --soc_version= <soc_version>  \n--log=info --job=128  --output= <output_dir>\n支持的型号\nAtlas 推理系列产品，支持该参数\nAtlas 训练系列产品，支持该参数\nAtlas A2 训练系列产品 /Atlas A2 推理系列产品，支持该参数\nAscend 950PR/Ascend 950DT ，不支持该参数\n使用约束\n无。CANN社区版\n算子编译工具用户指南 3 参数说明\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 24"
+    }
+  ]
+}

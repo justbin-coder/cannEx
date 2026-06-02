@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="1600" height="1000" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="base" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0B0F17"/>
+      <stop offset="1" stop-color="#0E1622"/>
+    </linearGradient>
+    <radialGradient id="glowIndigo" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#5B8DEF" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#5B8DEF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowTeal" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#2DD4BF" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#2DD4BF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="60"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="1000" fill="url(#base)"/>
+
+  <!-- 渐变光晕 mesh -->
+  <g filter="url(#soft)">
+    <ellipse cx="240" cy="180" rx="520" ry="420" fill="url(#glowIndigo)"/>
+    <ellipse cx="1420" cy="880" rx="560" ry="460" fill="url(#glowTeal)"/>
+    <ellipse cx="1300" cy="120" rx="360" ry="320" fill="url(#glowTeal)" opacity="0.5"/>
+  </g>
+
+  <!-- 极淡 chevron 上升motif（呼应 logo） -->
+  <g fill="none" stroke="#9FB6FF" stroke-opacity="0.07" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M620 720 L800 540 L980 720"/>
+    <path d="M620 820 L800 640 L980 820"/>
+    <path d="M620 920 L800 740 L980 920"/>
+  </g>
+
+  <!-- 细网格点阵，增加工程质感 -->
+  <g fill="#7FA8FF" fill-opacity="0.05">
+    <circle cx="120" cy="500" r="2"/><circle cx="180" cy="500" r="2"/><circle cx="240" cy="500" r="2"/>
+    <circle cx="120" cy="560" r="2"/><circle cx="180" cy="560" r="2"/><circle cx="240" cy="560" r="2"/>
+    <circle cx="1360" cy="300" r="2"/><circle cx="1420" cy="300" r="2"/><circle cx="1480" cy="300" r="2"/>
+    <circle cx="1360" cy="360" r="2"/><circle cx="1420" cy="360" r="2"/><circle cx="1480" cy="360" r="2"/>
+  </g>
+</svg>

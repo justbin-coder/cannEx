@@ -1,0 +1,19 @@
+# CannEx 文档配置
+docs:
+  - name: install
+    file: "CANN社区版 9.0.0 软件安装 01.pdf"
+    local_path: "raw/docs/CANN社区版 9.0.0 软件安装 01.pdf"
+    version: 9.0.0
+    category: install
+    audience: [B]
+    priority: P0
+    enabled: true
+
+  - name: operator_dev
+    file: "CANN社区版 9.0.0 Ascend C算子开发指南 技术部分 01_trimmed.pdf"
+    local_path: "raw/docs/CANN社区版 9.0.0 Ascend C算子开发指南 技术部分 01_trimmed.pdf"
+    version: 9.0.0
+    category: operator_dev
+    audience: [A, F]
+    priority: P0
+    enabled: true

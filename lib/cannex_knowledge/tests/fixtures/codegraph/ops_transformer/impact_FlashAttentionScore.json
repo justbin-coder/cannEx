@@ -1,0 +1,134 @@
+{
+  "symbol": "FlashAttentionScore",
+  "depth": 2,
+  "nodeCount": 21,
+  "edgeCount": 19,
+  "affected": [
+    {
+      "name": "FlashAttentionScore",
+      "kind": "method",
+      "filePath": "attention/flash_attention_score/op_host/flash_attention_score_def.cpp",
+      "startLine": 22
+    },
+    {
+      "name": "aclnnFlashAttentionScoreGetWorkspaceSize",
+      "kind": "function",
+      "filePath": "attention/flash_attention_score/op_api/aclnn_flash_attention_score.cpp",
+      "startLine": 1010
+    },
+    {
+      "name": "aclnn_flash_attention_score.cpp",
+      "kind": "file",
+      "filePath": "attention/flash_attention_score/op_api/aclnn_flash_attention_score.cpp",
+      "startLine": 1
+    },
+    {
+      "name": "aclnnFlashAttentionVarLenScoreGetWorkspaceSize",
+      "kind": "function",
+      "filePath": "attention/flash_attention_score/op_api/aclnn_flash_attention_score.cpp",
+      "startLine": 1114
+    },
+    {
+      "name": "aclnnFlashAttentionScoreV2GetWorkspaceSize",
+      "kind": "function",
+      "filePath": "attention/flash_attention_score/op_api/aclnn_flash_attention_score.cpp",
+      "startLine": 1218
+    },
+    {
+      "name": "main",
+      "kind": "function",
+      "filePath": "attention/flash_attention_score/examples/test_aclnn_flash_attention_score.cpp",
+      "startLine": 88
+    },
+    {
+      "name": "main",
+      "kind": "function",
+      "filePath": "attention/flash_attention_score/examples/test_aclnn_flash_attention_score_v2_fp32.cpp",
+      "startLine": 88
+    },
+    {
+      "name": "aclnnFlashAttentionScoreV3GetWorkspaceSize",
+      "kind": "function",
+      "filePath": "attention/flash_attention_score/op_api/aclnn_flash_attention_score.cpp",
+      "startLine": 1317
+    },
+    {
+      "name": "aclnnFlashAttentionScoreV4GetWorkspaceSize",
+      "kind": "function",
+      "filePath": "attention/flash_attention_score/op_api/aclnn_flash_attention_score.cpp",
+      "startLine": 1419
+    },
+    {
+      "name": "aclnnQuantFlashAttentionScoreGetWorkspaceSize",
+      "kind": "function",
+      "filePath": "attention/flash_attention_score/op_api/aclnn_flash_attention_score.cpp",
+      "startLine": 1539
+    },
+    {
+      "name": "aclnnFlashAttentionVarLenScoreV2GetWorkspaceSize",
+      "kind": "function",
+      "filePath": "attention/flash_attention_score/op_api/aclnn_flash_attention_score.cpp",
+      "startLine": 1620
+    },
+    {
+      "name": "aclnnFlashAttentionVarLenScoreV3GetWorkspaceSize",
+      "kind": "function",
+      "filePath": "attention/flash_attention_score/op_api/aclnn_flash_attention_score.cpp",
+      "startLine": 1727
+    },
+    {
+      "name": "aclnnFlashAttentionVarLenScoreV4GetWorkspaceSize",
+      "kind": "function",
+      "filePath": "attention/flash_attention_score/op_api/aclnn_flash_attention_score.cpp",
+      "startLine": 1837
+    },
+    {
+      "name": "main",
+      "kind": "function",
+      "filePath": "attention/flash_attention_score/examples/test_aclnn_flash_attention_score_varlen_v4_fp32.cpp",
+      "startLine": 92
+    },
+    {
+      "name": "ExecFlashAttentionVarLenScoreV5GetWorkspaceSize",
+      "kind": "function",
+      "filePath": "attention/flash_attention_score/op_api/aclnn_flash_attention_score.cpp",
+      "startLine": 1941
+    },
+    {
+      "name": "aclnnFlashAttentionVarLenScoreV5GetWorkspaceSize",
+      "kind": "function",
+      "filePath": "attention/flash_attention_score/op_api/aclnn_flash_attention_score.cpp",
+      "startLine": 2045
+    },
+    {
+      "name": "aclnnFlashAttentionVarLenScoreV5GetMaxWorkspaceSize",
+      "kind": "function",
+      "filePath": "attention/flash_attention_score/op_api/aclnn_flash_attention_score.cpp",
+      "startLine": 2077
+    },
+    {
+      "name": "FlashAttentionScore",
+      "kind": "class",
+      "filePath": "attention/flash_attention_score/op_host/flash_attention_score_def.cpp",
+      "startLine": 20
+    },
+    {
+      "name": "flash_attention_score_def.cpp",
+      "kind": "file",
+      "filePath": "attention/flash_attention_score/op_host/flash_attention_score_def.cpp",
+      "startLine": 1
+    },
+    {
+      "name": "FlashAttentionScore",
+      "kind": "function",
+      "filePath": "attention/flash_attention_score/op_api/flash_attention_score.cpp",
+      "startLine": 40
+    },
+    {
+      "name": "flash_attention_score.cpp",
+      "kind": "file",
+      "filePath": "attention/flash_attention_score/op_api/flash_attention_score.cpp",
+      "startLine": 1
+    }
+  ]
+}

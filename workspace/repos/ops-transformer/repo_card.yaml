@@ -1,0 +1,35 @@
+repo_name: ops-transformer
+repo_url: https://gitee.com/ascend/cann-ops/ops-transformer
+audience: [A, F]
+category: operator_implementation
+tagline: "CANN Transformer类大模型高性能算子库"
+scenarios:
+  - "学习生产级 Attention/FFN/MoE 算子的完整实现（Tiling+Kernel）"
+  - "参考官方实现开发自定义 Transformer 算子"
+  - "为 ops-transformer 贡献新算子（experimental/ 目录）"
+  - "理解多架构适配（arch32/arch35）和量化融合（quant/antiquant）实现方式"
+not_for:
+  - "CNN/RNN 等非 Transformer 结构算子开发"
+  - "CANN 应用层 API 调用（看 Ascend C 算子开发指南）"
+key_paths:
+  - path: attention/flash_attention_score/
+    desc: "FlashAttention 标准实现，含 arch32/arch35 双架构，BMM1+Softmax+BMM2 流水线"
+  - path: attention/incre_flash_attention/
+    desc: "增量推理 Attention（Decode 阶段），含 KVCache/量化/PageAttention"
+  - path: ffn/ffn/
+    desc: "FFN 算子族，含标准/GLU/SwiGLU/量化实现，vector+cube 融合典型案例"
+  - path: gmm/grouped_matmul/
+    desc: "分组矩阵乘，MoE 场景核心算子，多种 shape 策略"
+  - path: moe/
+    desc: "MoE gating/routing/finalize 全流程算子"
+  - path: mc2/
+    desc: "通算融合：AllGather+Matmul / Matmul+AllReduce 等分布式训练算子"
+  - path: experimental/
+    desc: "社区贡献目录，含算子开发模板 npu_ops_transformer_ext"
+  - path: docs/zh/develop/aicore_develop_guide.md
+    desc: "算子开发指南，新手必读"
+contribution:
+  guide_path: CONTRIBUTING.md
+  pr_template: "参见 CONTRIBUTING.md，实验性算子提交到 experimental/ 目录"
+maintained_by: cannex_team
+last_reviewed: "2026-05-24"

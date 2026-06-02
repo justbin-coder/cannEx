@@ -1,0 +1,47 @@
+# Keep image lean — only lib/, skills/, webchat/cannex_chat/, deploy/ matter.
+
+.git/
+.gitignore
+.github/
+.claude/
+
+# Big binary artefacts, mounted as volume at runtime instead.
+workspace/
+raw/
+
+# Forked upstream Chainlit source — not used by the cannex_chat app.
+webchat/chainlit/
+
+# Local dev junk
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/.venv/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.codegraph/
+**/node_modules/
+
+# Logs and reports
+logs/
+reports/
+*.log
+*.pid
+
+# Docs and dev-only directories
+docs/
+tests/
+build/
+trim_pdf.py
+conftest.py
+pytest.ini
+
+# Secrets — never bake into image
+**/.env
+deploy/.env
+
+# OS / editor
+.DS_Store
+**/.idea/
+**/.vscode/

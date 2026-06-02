@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 176 48" width="176" height="48" role="img" aria-label="CannEx">
+  <defs>
+    <linearGradient id="cxLogoDark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5B8DEF"/>
+      <stop offset="1" stop-color="#2DD4BF"/>
+    </linearGradient>
+  </defs>
+  <rect x="3" y="6" width="36" height="36" rx="10" fill="url(#cxLogoDark)"/>
+  <circle cx="21" cy="14.5" r="2" fill="#fff"/>
+  <path d="M12 27 L21 19 L30 27" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M12 33 L21 25 L30 33" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+  <text x="50" y="31" font-family="Inter, ui-sans-serif, system-ui, 'PingFang SC', sans-serif" font-size="22" font-weight="700" letter-spacing="-0.6" fill="#F8FAFC">CannEx</text>
+</svg>

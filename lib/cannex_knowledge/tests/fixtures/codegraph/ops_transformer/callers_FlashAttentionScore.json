@@ -1,0 +1,35 @@
+{
+  "symbol": "FlashAttentionScore",
+  "callers": [
+    {
+      "name": "aclnnFlashAttentionScoreGetWorkspaceSize",
+      "kind": "function",
+      "filePath": "attention/flash_attention_score/op_api/aclnn_flash_attention_score.cpp",
+      "startLine": 1010
+    },
+    {
+      "name": "aclnnFlashAttentionVarLenScoreGetWorkspaceSize",
+      "kind": "function",
+      "filePath": "attention/flash_attention_score/op_api/aclnn_flash_attention_score.cpp",
+      "startLine": 1114
+    },
+    {
+      "name": "aclnnFlashAttentionScoreV2GetWorkspaceSize",
+      "kind": "function",
+      "filePath": "attention/flash_attention_score/op_api/aclnn_flash_attention_score.cpp",
+      "startLine": 1218
+    },
+    {
+      "name": "aclnnFlashAttentionScoreV3GetWorkspaceSize",
+      "kind": "function",
+      "filePath": "attention/flash_attention_score/op_api/aclnn_flash_attention_score.cpp",
+      "startLine": 1317
+    },
+    {
+      "name": "aclnnFlashAttentionScoreV4GetWorkspaceSize",
+      "kind": "function",
+      "filePath": "attention/flash_attention_score/op_api/aclnn_flash_attention_score.cpp",
+      "startLine": 1419
+    }
+  ]
+}

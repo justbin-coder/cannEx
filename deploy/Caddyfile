@@ -1,0 +1,32 @@
+# CannEx — Caddy reverse proxy with auto-HTTPS via Let's Encrypt.
+#
+# nip.io trick: 179-147-19-2.nip.io resolves back to 179.147.19.2 via DNS,
+# so Let's Encrypt's HTTP-01 challenge works without owning a domain.
+#
+# Replace the hostname if you change server IP.
+
+179-147-19-2.nip.io {
+    reverse_proxy web:8000
+
+    # Caddy auto-handles WebSocket upgrade for reverse_proxy, no extra config needed.
+    # Chainlit uses WebSocket for streaming — verify with browser devtools after deploy.
+
+    encode gzip
+
+    log {
+        output file /data/access.log {
+            roll_size 10mb
+            roll_keep 5
+        }
+        format json
+    }
+
+    # Security headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        # Chainlit serves its own CSP; do not override here.
+        -Server
+    }
+}

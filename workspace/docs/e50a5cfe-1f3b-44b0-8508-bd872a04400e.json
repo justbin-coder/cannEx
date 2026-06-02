@@ -1,0 +1,999 @@
+{
+  "id": "e50a5cfe-1f3b-44b0-8508-bd872a04400e",
+  "type": "pdf",
+  "path": "/Users/justbin/Desktop/CannEx/raw/docs/CANN社区版 9.1.0-beta1 精度调试工具用户指南 01.pdf",
+  "doc_name": "CANN社区版 9.1.0-beta1 精度调试工具用户指南 01.pdf",
+  "doc_description": "该文档是《CANN社区版精度调试工具用户指南》，系统性地指导开发者在昇腾NPU与GPU/CPU之间进行多框架（TensorFlow、ONNX、Caffe）模型推理或训练的精度比对，涵盖数据准备、比对操作、结果分析、溢出诊断及格式转换等全流程，专门用于定位和解决AI模型部署中的精度差异问题。",
+  "page_count": 116,
+  "structure": [
+    {
+      "title": "Preface",
+      "node_id": "0000",
+      "start_index": 1,
+      "end_index": 5,
+      "summary": "该部分文档是《CANN社区版精度调试工具用户指南》的开头内容，主要包括文档基本信息、版权声明、商标声明、法律免责条款以及详细的安全与产品生命周期相关政策链接。文档标题表明其面向华为CANN（Compute Architecture for Neural Networks）社区版9.1.0-beta1，核心用途是指导用户使用精度调试工具进行不同硬件平台（如GPU、CPU与NPU）之间的模型推理或训练结果比对。目录结构显示，文档主体涵盖多种深度学习框架（TensorFlow、ONNX、Caffe）在不同推理模式（在线/离线）下与NPU的精度比对流程，包括数据准备、比对操作、结果分析及优化建议，并提供扩展功能（如溢出算子分析、数据格式转换等）和附录（数据格式、命令说明等）。整体聚焦于帮助开发者诊断和解决AI模型在昇腾NPU上部署时的精度差异问题。"
+    },
+    {
+      "title": "简介",
+      "node_id": "0001",
+      "start_index": 6,
+      "end_index": 7,
+      "summary": "该部分文档介绍了昇腾自研算子在AI处理器上与业界标杆算子运算结果可能存在差异的三种主要场景：模型迁移（从GPU迁移到昇腾环境）、模型转换（通过ATC工具进行算子优化）以及模型兼容性问题（因CANN版本、模型版本、硬件升级或算子融合设置变化导致的精度下降）。为帮助开发者快速定位和解决精度问题，文档说明了精度调试工具提供的算子结果比对功能，并概述了三类支持的精度比对流程：GPU vs Ascend NPU（训练）、GPU/CPU vs Ascend NPU（推理）以及Ascend NPU vs Ascend NPU（推理），分别对应后续章节中不同框架和场景下的具体操作指南。"
+    },
+    {
+      "title": "使用前准备",
+      "node_id": "0002",
+      "start_index": 8,
+      "end_index": 9,
+      "summary": "该部分文档主要介绍了精度调试工具在使用前的准备工作和相关约束条件。核心内容包括：强调数据dump功能可能涉及敏感信息，仅限开发调测阶段使用，生产环境应关闭以避免安全风险；推荐最低硬件配置（CPU 8核2.6GHz、内存16GB）；要求运行用户具备相应文件读写权限，且禁止使用root等高权限账户，应遵循最小权限原则；需预先安装CANN软件包并正确加载其环境变量脚本set_env.sh，且不得擅自修改其中的环境变量；规定执行用户的umask值应≥0027，以防止生成的文件权限过大；明确该工具不适用于生产环境，且不支持单算子网络的精度比对；列出支持的dump数据类型（如FLOAT、INT8、BFLOAT16等），并特别说明若使用DT_BFLOAT16需额外安装bfloat16ext依赖；最后简要说明需安装配套版本的CANN Toolkit和ops算子包，并按文档指引配置环境变量。"
+    },
+    {
+      "title": "GPU vs NPU （TensorFlow 1.15 训练/在线推理）",
+      "node_id": "0003",
+      "start_index": 10,
+      "end_index": 10,
+      "summary": "The partial document outlines the process and requirements for comparing GPU and NPU performance in TensorFlow 1.15 training and online inference scenarios. It details the necessary data files for comparison, including GPU-side npy files containing reference data, NPU-side dump data generated during execution, and computation graph files (*.txt). The document references a table specifying file types, their purposes, and acquisition methods, and emphasizes the need to analyze eight comparison results for debugging precision issues, likely using Huawei's CANN community edition tools.",
+      "nodes": [
+        {
+          "title": "总体说明",
+          "node_id": "0004",
+          "start_index": 10,
+          "end_index": 10,
+          "summary": "The partial document outlines a comparison process between GPU and NPU performance in TensorFlow 1.15 training and online inference scenarios. It details the required data files for accuracy verification, including GPU-side npy files (serving as reference data), NPU-side dump data, and computation graph files (*.txt). The document references a table specifying file types, descriptions, and acquisition methods, and emphasizes the need to analyze eight comparison results for debugging purposes, guided by the CANN Community Edition Precision Debugging Tool User Guide."
+        },
+        {
+          "title": "准备GPU侧npy文件",
+          "node_id": "0005",
+          "start_index": 11,
+          "end_index": 13,
+          "summary": "该部分文档主要介绍了在使用 TensorFlow 1.15 进行 GPU 与 NPU 精度比对前，如何分别准备 GPU 侧的 npy 文件和 NPU 侧的 dump 数据及计算图文件。对于 GPU 侧，详细说明了需关闭所有随机性（如数据 shuffle、参数随机初始化等），并通过 TensorFlow 的 tfdbg 工具在 Estimator 或 session.run 模式下生成并批量导出张量为 npy 文件，包括具体代码修改、调试命令操作及文件命名规范。对于 NPU 侧，强调了需确保训练/推理工程可执行、代码与 GPU 完全一致、去除随机因子，并提供了 dump 数据的基本流程、注意事项（如控制迭代次数、多卡时间戳问题、容器内数据存储等）以及当前支持 dump 的算子类型。"
+        },
+        {
+          "title": "准备NPU侧dump数据和计算图文件",
+          "node_id": "0006",
+          "start_index": 13,
+          "end_index": 17,
+          "summary": "该部分文档主要介绍了在使用华为CANN工具进行TensorFlow 1.15模型在GPU与NPU之间精度比对时，关于dump数据准备、文件命名规范、数据采集配置及比对操作的关键步骤和注意事项。主要内容包括：\n\n1. **tfdbg命令行粘贴问题处理**：建议关闭鼠标模式以支持内容粘贴。\n2. **npy文件命名规则与异常处理**：要求文件名符合{op_name}.{output_index}.{timestamp}.npy格式；若因算子名过长导致文件名超限（>255字符），则不支持精度比对，需手工重命名或参考批量处理方法。\n3. **NPU侧dump数据准备前提条件**：\n   - 需已完成网络开发、编译和运行；\n   - 建议仅执行一次迭代以控制数据量；\n   - 多卡环境会产生多个时间戳目录；\n   - 容器内数据保存在容器中；\n   - 需移除随机因子并确保NPU与GPU代码完全一致；\n   - 不建议在同一脚本中混合训练与验证；\n   - 仅支持AI CPU、AI Core和HCCL算子dump。\n4. **dump参数配置方法**：\n   - Estimator模式通过DumpConfig类配置；\n   - sess.run模式通过tf.ConfigProto中的custom_op参数配置，包括dump_path、dump_step、dump_mode等。\n5. **dump数据与计算图文件生成路径说明**：\n   - 计算图文件默认生成于脚本当前目录，可通过DUMP_GRAPH_PATH指定路径；\n   - dump数据按{dump_path}/{time}/{device_id}/{model_name}/{model_id}/{data_index}结构存储；\n   - 提供了路径各字段的详细解释（如time格式、model_name特殊字符替换等）。\n6. **计算图与dump数据文件选取方法**：\n   - 通过pb模型或grep \"Iterator\"定位正确计算图文件；\n   - 根据计算图中graph.name字段匹配对应dump数据目录；\n   - dump文件命名格式因硬件产品不同存在差异，并说明特殊字符替换及超长文件名处理（使用mapping.csv）；\n   - 列出不会生成dump数据的算子类型（如控制流、常量、被优化掉的算子等）。\n7. **精度比对操作流程**：\n   - 使用atc工具将.txt计算图转为.json格式；\n   - 调用msaccucmp.py脚本执行整网全算法维度比对；\n   - 提供命令示例及路径说明；\n   - 注意事项包括内存溢出处理、大文件比对耗时提示及结果目录权限要求。"
+        },
+        {
+          "title": "比对操作和分析",
+          "node_id": "0007",
+          "start_index": 17,
+          "end_index": 18,
+          "summary": "该部分文档主要说明了NPU侧dump数据文件的命名规则、限制条件及精度比对操作流程。首先，描述了dump文件中特殊字符（如“.”、“/”、“\\”、空格）会被替换为下划线，以及当文件名超过操作系统长度限制时会重命名为随机数字，并通过mapping.csv记录映射关系。其次，列举了在图执行过程中不会生成dump数据的算子类型，包括非Device侧执行的条件类、数据类、数据流类算子，被图引擎（GE）标记为_no_task=true的算子，以及不可达分支中的算子。随后，详细介绍了整网全算法维度的精度比对操作步骤：包括环境准备、生成JSON格式计算图、进入比对工具目录、执行比对命令，并说明了关键命令行参数（-m、-g、-f、-out、-advisor）的用途和要求。文档还提示了内存溢出处理方法、大文件比对耗时警告、依赖库版本要求（pandas ≥1.3），并指引用户参考其他章节获取参数详情、结果解读及异常处理说明。"
+        }
+      ]
+    },
+    {
+      "title": "GPU vs NPU （TensorFlow 离线推理）",
+      "node_id": "0008",
+      "start_index": 19,
+      "end_index": 19,
+      "summary": "The partial document outlines the process and requirements for comparing the inference accuracy between GPU (using TensorFlow) and NPU in an offline inference scenario. It specifies that only non-quantized original models and non-quantized offline models are supported for comparison. Key steps include preparing npy files from the TensorFlow model, generating a full network layer information file (typically via ATC conversion to obtain operator mapping), and collecting dump data from the NPU execution of the offline model. The document references related sections for detailed instructions on obtaining these files and emphasizes the need to analyze eight specific comparison results for validation.",
+      "nodes": [
+        {
+          "title": "总体说明",
+          "node_id": "0009",
+          "start_index": 19,
+          "end_index": 19,
+          "summary": "The partial document outlines the process and requirements for comparing the precision of non-quantized TensorFlow models running on GPU versus NPU in an offline inference scenario. It specifies that only non-quantized original models and non-quantized offline models are supported for comparison. Key steps include preparing npy files from the original TensorFlow model, generating a full network layer information file (typically a JSON file from ATC model conversion), and obtaining dump data from the NPU execution environment. The document references related sections for detailed instructions on acquiring these files and emphasizes the need to analyze eight comparison results for accuracy validation."
+        },
+        {
+          "title": "准备TensorFlow 模型npy文件",
+          "node_id": "0010",
+          "start_index": 20,
+          "end_index": 22,
+          "summary": "该部分文档主要介绍了在使用华为CANN社区版进行TensorFlow模型精度调试（GPU vs NPU）时，如何准备两类关键文件：TensorFlow模型的npy数据文件和全网层信息json文件。首先，在4.2节中说明当前版本不提供自动生成npy文件的功能，用户需自行配置TensorFlow环境，并通过TensorFlow调试工具tfdbg生成npy格式的张量数据。文档详细描述了在Estimator模式和session.run模式下插入tfdbg钩子的方法，以及通过tfdbg命令行交互式操作批量导出所有张量为符合命名规范（{op_name}.{output_index}.{timestamp}.npy）的npy文件的具体步骤，同时指出文件名过长或格式不符时的处理建议。其次，在4.3节中介绍了如何使用ATC模型转换工具将TensorFlow的.pb模型转换为Ascend离线模型（.om），并进一步生成包含全网层信息的.json文件，用于后续精度比对分析。"
+        },
+        {
+          "title": "准备全网层信息文件",
+          "node_id": "0011",
+          "start_index": 22,
+          "end_index": 22,
+          "summary": "该部分文档主要说明了在使用精度调试工具进行TensorFlow离线推理时，关于.npy文件命名异常的处理方法以及如何通过ATC模型转换工具准备全网层信息文件。首先指出，若因算子名过长导致生成的.npy文件名超过255字符，则该算子不支持精度比对；同时，由于tfdbg或运行环境原因造成的.npy文件名不符合要求时，需按命名规则手动重命名，若异常文件较多，可参考10.8节进行批量处理。随后详细介绍了使用ATC工具将原始TensorFlow模型（.pb）转换为离线模型（.om）并生成对应JSON文件的操作步骤，包括登录环境、获取模型、执行模型转换和JSON文件生成等流程，并提供了相应的命令示例和成功提示信息。"
+        },
+        {
+          "title": "比对操作和分析",
+          "node_id": "0012",
+          "start_index": 23,
+          "end_index": 24,
+          "summary": "该部分文档详细介绍了在CANN精度调试工具中进行GPU与NPU比对操作的具体流程和注意事项。主要内容包括：比对操作的前提条件（如完成环境准备和文件准备）、执行比对的详细步骤（包括登录环境、进入工具目录、运行比对命令）、关键参数说明（如-m、-g、-f、-out、-advisor等）及其必选性，以及对大文件或内存溢出等异常情况的处理建议。文档还强调了结果输出路径的权限设置、依赖库（如pandas 1.3+）的要求，并指引用户参考其他章节进行比对结果分析、异常处理及专家建议解读。"
+        }
+      ]
+    },
+    {
+      "title": "GPU vs NPU （ONNX离线推理）",
+      "node_id": "0013",
+      "start_index": 25,
+      "end_index": 25,
+      "summary": "The partial document outlines a procedure for comparing inference results between GPU and NPU using ONNX offline models. It specifies that only non-quantized model comparisons are supported and details the required data files: npy files from the original non-quantized model, a JSON file mapping operators generated during ATC model conversion, and dump data files produced by running the non-quantized offline model on an AI processor (NPU). The document references sections explaining how to prepare these files and directs users to additional resources for obtaining NPU dump data in offline inference scenarios.",
+      "nodes": [
+        {
+          "title": "总体说明",
+          "node_id": "0014",
+          "start_index": 25,
+          "end_index": 25,
+          "summary": "The partial document outlines a comparison process between GPU and NPU performance in the context of ONNX offline inference, focusing on non-quantized model accuracy validation. It details the required preparation steps, including generating npy files from the original ONNX model, creating a full network layer information file, and obtaining dump data from the NPU-executed offline model. The document specifies that only non-quantized precision comparisons are supported and references methods for acquiring necessary data files, such as using ATC conversion to derive operator mapping relationships and following guidelines from the CANN Community Edition for dump data collection."
+        },
+        {
+          "title": "准备ONNX模型npy文件",
+          "node_id": "0015",
+          "start_index": 26,
+          "end_index": 27,
+          "summary": "该部分文档主要介绍了在使用CANN社区版进行GPU与NPU精度比对时，准备ONNX模型相关文件及执行比对的关键步骤。主要内容包括：  \n1. **ONNX模型npy文件的准备**：要求每个算子节点必须有名称，以便生成符合命名规范（{op_name}.{output_index}.{timestamp}.npy）的输出文件；提供了参考代码示例，通过修改ONNX模型增加所有中间节点为输出，并在推理后将各节点输出保存为npy文件，强调output_index需包含0以确保精度比对有效。  \n2. **全网层信息json文件的生成**：通过ATC工具将ONNX模型转换为离线.om模型，并进一步生成对应的.json文件，用于后续精度分析。  \n3. **比对操作说明**：指出比对过程中需注意文件路径权限、内存溢出问题（建议拆分大文件），以及处理大文件时可能出现的长时间运行提示。  \n整体流程覆盖了从模型预处理、中间结果导出到最终精度比对的准备工作。"
+        },
+        {
+          "title": "准备全网层信息文件",
+          "node_id": "0016",
+          "start_index": 27,
+          "end_index": 27,
+          "summary": "该部分文档主要介绍了在使用华为Ascend CANN工具链进行ONNX模型转换及精度比对过程中的关键操作步骤和注意事项。主要内容包括：  \n1. 配置输出目录（如“onnx_dump”）用于存放dump数据，并说明npy文件的命名规范，强调output_index必须包含值为0的数据以确保精度比对正常进行；  \n2. 通过ATC工具将ONNX模型转换为离线.om模型的具体步骤，包括环境准备、原始模型获取、执行转换命令及验证成功提示；  \n3. 利用ATC工具从.om模型生成包含全网层信息的.json文件的方法；  \n4. 精度比对操作的说明与前提条件，包括文件路径权限要求、处理大数据量时可能出现的内存溢出问题及性能提示。"
+        },
+        {
+          "title": "比对操作和分析",
+          "node_id": "0017",
+          "start_index": 27,
+          "end_index": 29,
+          "summary": "该部分文档主要介绍了在华为Ascend CANN环境下，进行GPU与NPU（基于ONNX离线推理）精度比对的完整操作流程和关键注意事项。主要内容包括：  \n1. **dump数据准备要求**：需根据output_dump_path参数创建onnx_dump目录，并遵循特定命名格式（{op_name}.{output_index}.{timestamp}.npy），其中output_index必须包含值为0的文件以确保比对正常进行。  \n2. **全网层信息文件（JSON）生成**：通过ATC工具将ONNX模型转换为离线.om模型，并进一步生成用于算子映射的.json文件。  \n3. **精度比对操作步骤**：使用msaccucmp.py脚本执行比对，详细说明了命令参数（-m指定NPU dump目录、-g指定ONNX npy目录、-f指定JSON文件、-out指定结果输出路径、-advisor启用专家建议等）及其必选性。  \n4. **注意事项与异常处理**：包括文件权限、内存溢出（MemoryError）应对措施（如拆分大文件）、大文件比对耗时提示，以及依赖库（pandas ≥1.3）要求。  \n5. **结果分析指引**：比对结果的解读参考其他章节（如第9章和第11章），并提示对NaN等异常情况的处理方法。"
+        }
+      ]
+    },
+    {
+      "title": "GPU/CPU vs NPU （Caffe离线推理）",
+      "node_id": "0018",
+      "start_index": 30,
+      "end_index": 30,
+      "summary": "The partial document outlines a procedure for comparing inference accuracy between GPU/CPU and NPU using Caffe offline models. It covers both quantized and non-quantized scenarios, detailing the required data files for comparison—such as npy files from the original model, JSON files containing operator mapping from ATC conversion, and dump data generated by the offline model on the AI processor. The document references specific sections for preparing Caffe model npy files, obtaining model and quantization info files, and performing the actual comparison and analysis. It also points to external guidance for acquiring NPU dump data in offline inference contexts.",
+      "nodes": [
+        {
+          "title": "总体说明",
+          "node_id": "0019",
+          "start_index": 30,
+          "end_index": 33,
+          "summary": "The partial document outlines a detailed methodology for comparing inference accuracy between GPU/CPU and NPU (Neural Processing Unit) in Caffe-based offline inference scenarios, with a focus on both quantized and non-quantized models. Key points include:\n\n1. **Overview of Comparison Scenarios**: The document distinguishes between non-quantized and quantized model comparisons, specifying required data files (e.g., .npy dump files, model files, JSON mapping files) and their sources.\n\n2. **Quantization Explanation**: It defines quantization as a technique to reduce model size and improve efficiency by lowering bit precision of weights and activations, while noting potential accuracy loss.\n\n3. **Precision Debugging Workflow**:\n   - **Step a**: Diagnose quantization-induced accuracy issues by comparing non-quantized vs. quantized models on GPU/CPU, including guidance on acceptable error margins (~1%), dataset representativeness, and manual de-quantization of first/last layers.\n   - **Step b**: Identify model conversion-related errors by comparing quantized CPU/GPU models against NPU-executed offline models with operator fusion disabled via ATC tool parameters (using --fusion_switch_file).\n   - **Step c (Optional)**: Compare NPU models with and without operator fusion enabled to assess fusion impact.\n\n4. **Technical Procedures**:\n   - Instructions for preparing Caffe model files (e.g., removing in-place operations to ensure correct .npy naming).\n   - Commands for ATC-based model conversion, JSON file generation, and dump data collection.\n   - Emphasis on consistent data preprocessing between AMCT quantization and inference.\n\n5. **Error Analysis Guidance**: Recommends checking for localized vs. cumulative errors, using cosine similarity limitations, and escalating to single-operator comparison if needed.\n\n6. **File Preparation Requirements**: Specifies exact inputs for different comparison types (e.g., Tables 6-1 and 6-2 list required files like .npy dumps, .prototxt/.caffemodel pairs, and quantization JSONs)."
+        },
+        {
+          "title": "Caffe模型npy文件准备",
+          "node_id": "0020",
+          "start_index": 33,
+          "end_index": 34,
+          "summary": "该部分文档主要介绍了在CANN社区版精度调试工具中，为进行GPU/CPU与NPU（Caffe离线推理）的算子精度比对所需准备的各类文件及其获取方法。核心内容包括：  \n1. **模型文件与量化信息文件的准备**：说明可通过ATC工具将Caffe模型转换为离线模型（.om）并生成对应的JSON映射文件，或通过AMCT工具获取量化后的模型及量化信息文件（*.json），二者择一用于算子映射关系。  \n2. **Caffe模型npy文件的生成要求与步骤**：强调需先去除原始Caffe模型中的in-place操作以确保dump数据命名正确；要求Caffe推理时的预处理数据与AMCT量化时保持一致；提供在Caffe推理代码中添加dump操作的示例，以生成符合精度比对要求的npy文件，并说明npy文件命名格式必须包含output_index为0的数据。  \n3. **离线模型dump数据文件的准备**：指出量化离线模型在AI处理器上运行后生成的dump数据用于后续比对。  \n4. **相关工具使用指引**：包括ATC模型转换命令、AMCT安装与使用参考，以及建议用户参考社区论坛获取标杆数据生成环境搭建指导。"
+        },
+        {
+          "title": "准备模型文件和量化信息文件",
+          "node_id": "0021",
+          "start_index": 34,
+          "end_index": 35,
+          "summary": "该部分文档主要介绍了在Caffe模型中插入代码以导出各层输出数据为npy文件的方法，并详细说明了如何准备用于精度比对的模型文件和量化信息文件。主要内容包括：  \n1. 通过修改代码实现模型推理过程中各层输出数据的dump，生成符合命名规范（{op_name}.{output_index}.{timestamp}.npy）的npy文件，并强调output_index必须包含0以确保后续精度比对有效；  \n2. 使用ATC工具将原始Caffe模型（.prototxt和.caffemodel）转换为离线模型（.om）及对应的全网层信息json文件；  \n3. 获取量化相关文件（包括部署模型、仿真模型及其权重和量化信息json），并说明其用途；  \n4. 对量化模型再次使用ATC转换，生成量化离线模型及对应json文件；  \n5. 精度比对操作的前提条件、注意事项（如内存限制、大文件处理、中间算子过滤等）及基本流程。"
+        },
+        {
+          "title": "比对操作和分析",
+          "node_id": "0022",
+          "start_index": 35,
+          "end_index": 37,
+          "summary": "该部分文档主要介绍了Caffe模型量化后的文件结构、用途及精度比对操作流程。核心内容包括：（1）量化生成的各类文件说明，如量化信息文件（resnet50_quant.json）、可部署模型与权重文件（用于AI处理器）、以及用于Caffe环境精度仿真的模型与权重文件；（2）通过ATC工具将量化原始模型转换为离线模型的方法；（3）详细描述了在GPU/CPU与NPU之间进行精度比对的操作步骤，包括环境准备、命令执行、参数说明（如-m、-g、-f、-q、-out、-advisor等）及注意事项；（4）强调了比对过程中的常见问题处理，如内存溢出、大文件耗时、中间算子精度损失导致的比对过滤等；（5）指出比对结果的分析方法及相关参考章节。"
+        }
+      ]
+    },
+    {
+      "title": "NPU vs NPU （离线推理）",
+      "node_id": "0023",
+      "start_index": 38,
+      "end_index": 38,
+      "summary": "The partial document outlines the \"NPU vs NPU (offline inference)\" comparison scenario, focusing on precision validation between offline models running on identical AI chips. It specifies that this scenario supports comparisons only between non-quantized vs. non-quantized models or quantized vs. quantized models. Key sub-scenarios include: (1) precision comparison before and after version iterations—such as CANN software updates, model version changes, or model optimizations—to detect potential accuracy degradation; and (2) precision comparison between models with operator fusion enabled versus disabled during ATC-based model conversion. The section also notes prerequisites for preparing offline model files and corresponding dump data files for comparison and analysis.",
+      "nodes": [
+        {
+          "title": "总体说明",
+          "node_id": "0024",
+          "start_index": 38,
+          "end_index": 40,
+          "summary": "该部分文档详细介绍了在离线推理场景下进行NPU与NPU之间精度比对的方法和要求。主要内容包括两个核心子场景：一是版本迭代前后的模型精度比对（涵盖非量化vs非量化、量化vs量化），用于检测CANN软件、模型版本或优化操作是否引入精度下降；二是开启与关闭算子融合功能的模型转换精度比对（同样区分非量化和量化），用于评估算子融合对模型精度的影响。文档明确了每种比对场景所需准备的离线模型文件（.om）和对应的dump数据文件，并提供了通过ATC工具生成开启/关闭算子融合的离线模型的具体操作步骤。此外，强调该比对仅适用于相同芯片、且模型类型（量化或非量化）必须一致的情况。"
+        },
+        {
+          "title": "准备离线模型文件",
+          "node_id": "0025",
+          "start_index": 40,
+          "end_index": 42,
+          "summary": "该部分文档主要介绍了在华为Ascend AI处理器上进行离线模型精度调试所需准备的两类关键文件：离线模型文件和对应的dump数据文件。核心内容包括：\n\n1. **离线模型文件准备**：\n   - 区分非量化与量化模型，并分别说明如何通过ATC工具生成开启和关闭算子融合功能的.om模型文件。\n   - 对于非量化模型，详细列出使用ATC转换原始模型（如Caffe格式）的步骤，强调默认开启算子融合，关闭需通过fusion_switch_file配置文件显式禁用。\n   - 对于量化模型，说明需先使用AMCT工具对原始模型进行量化，生成部署用的量化模型及权重文件，再通过ATC转换为开启/关闭算子融合的量化离线模型。\n\n2. **Dump数据文件准备**：\n   - 说明dump数据用于模型推理过程中的中间结果比对，以支持精度调试。\n   - 提供通过aclInit()或aclmdlSetDump()接口配置dump的两种方式。\n   - 详细描述如何修改acl.json配置文件以启用dump功能，包括指定模型名称和可选的特定算子层。\n   - 强调使用注意事项，如确保应用工程正常运行、避免多次推理导致数据量过大、Docker环境下不支持dump等。\n\n整体围绕“NPU vs NPU（离线推理）”场景下的精度比对需求，指导用户生成用于对比分析的标准（标杆）和待测（待比对）模型及其对应的dump数据。"
+        },
+        {
+          "title": "准备离线模型 dump数据文件",
+          "node_id": "0026",
+          "start_index": 42,
+          "end_index": 51,
+          "summary": "该部分文档主要介绍了在华为CANN平台下，针对量化后的ResNet-50模型进行离线部署和精度调试的相关流程与配置方法。核心内容包括：\n\n1. **量化模型文件说明**：列出了用于AI处理器部署的量化模型（resnet50_deploy_model.prototxt 和 .caffemodel）以及用于Caffe环境精度仿真的量化模型（resnet50_fake_quant_model.prototxt 和 .caffemodel），并说明通过ATC工具将部署模型转换为开启或关闭算子融合的离线模型。\n\n2. **离线模型dump数据准备**：\n   - 强调dump前需确保应用工程已编译运行正常，并建议仅执行单次推理以控制数据量。\n   - 指出Docker环境下不支持dump功能。\n   - 介绍通过aclInit()或aclmdlSetDump()接口配置dump，并需指定acl.json配置文件路径。\n\n3. **acl.json配置详解**：\n   - 提供模型推理和单算子调用两种场景下的dump配置示例。\n   - 详细说明关键配置项：dump_list（指定模型和算子）、model_name、layer（指定算子名）、dump_path（存储路径）、dump_mode（input/output/all）、dump_level（op/kernel/all）、dump_op_switch（单算子场景开关）、dump_step（指定迭代步）、dump_data（tensor/stats）及dump_stats（统计类型如Max/Min等）。\n   - 介绍黑名单机制（optype_blacklist 和 opname_blacklist）用于排除特定算子的数据dump，以及opname_range用于按算子范围dump。\n\n4. **dump数据生成与存储**：\n   - 描述dump文件的落盘路径结构，区分模型推理与单算子场景。\n   - 说明文件命名规则及特殊字符处理，超长文件名的随机重命名机制，以及mapping.csv的作用。\n   - 列出不会产生dump数据的算子类型（如控制流、数据类、被图优化剔除的算子等）。\n\n5. **比对操作前提**：简要提及后续比对分析需满足前置条件，并警告大文件比对可能耗时较长。\n\n整体聚焦于如何配置、生成和管理NPU离线推理过程中的中间数据dump，以支持模型精度调试与问题定位。"
+        },
+        {
+          "title": "比对操作和分析",
+          "node_id": "0027",
+          "start_index": 51,
+          "end_index": 54,
+          "summary": "该部分文档主要涵盖以下内容：  \n1. **dump数据文件路径说明**：详细解释了dump数据文件的命名规则、各路径字段（如dump_path、time、device_id、model_name、model_id、data_index）的含义及特殊字符处理方式；同时说明了文件名超长时的重命名机制及不生成dump数据的算子类型。  \n2. **NPU vs NPU离线推理精度比对操作流程**：包括比对前提条件、生成JSON配置文件的ATC命令、比对工具路径、执行比对的具体命令示例，以及-m、-g、-f、-cf、-out等关键命令行参数的说明。  \n3. **比对结果说明与分析指引**：指出比对结果中NPUDump与GroundTruth分别代表开启和关闭算子融合的模型输出，并引导用户参考其他章节进行结果分析及异常情况（如NaN）处理。"
+        }
+      ]
+    },
+    {
+      "title": "比对结果说明",
+      "node_id": "0028",
+      "start_index": 55,
+      "end_index": 55,
+      "summary": "该部分文档主要说明了在模型比对过程中可能出现的无法比对或异常情况及其原因。主要内容包括：不同框架（如Caffe、TensorFlow）中相同算子名称但非相同模型的数据仅显示匹配算子的比对结果；图编译过程中因算子融合或结构性修改（如stride切分、L1/L2 fusion）导致输入/输出无法对应；算子Shape不一致或Format不支持转换时无法比对；量化模型中未经反量化的算子（如AscendQuant）输出不可比对；FastRCNN网络中ProposalD及后续算子精度不达标属正常，应以FSRDetectionOutput算子为准；模型转换引入预处理（如AIPP下YUV格式输入）导致data算子比对结果无效；相同算子多输入顺序不一致影响比对可信度；未关闭融合规则导致量化算子与前序算子融合，使输出比对结果不可信。"
+    },
+    {
+      "title": "比对结果分析",
+      "node_id": "0029",
+      "start_index": 56,
+      "end_index": 56,
+      "summary": "该部分文档主要介绍模型精度比对结果的分析方法与指导原则。内容涵盖比对结果的解读说明（如“*”和“NaN”的含义）、专家建议机制用于快速定位常见精度问题、多种精度评价指标的使用、npy文件间的精度比对方法、单算子级别的详细精度差异分析，以及针对问题算子的优化策略（如修改、替换或融合）。同时，文档还说明了在复杂或模糊场景下，如何通过命令行参数（-r/-s）实现指定范围内的算子精度比对，以提升大型网络中问题定位效率。",
+      "nodes": [
+        {
+          "title": "比对结果分析指导",
+          "node_id": "0030",
+          "start_index": 56,
+          "end_index": 56,
+          "summary": "该部分文档主要介绍模型精度比对结果的分析方法与指导原则。内容包括：比对结果中特殊符号（如“*”和“NaN”）的含义说明；针对常见精度问题提供专家建议（Advisor）以快速定位问题算子；在复杂场景下结合多种精度评价指标（见9.3节）进行问题排查；支持通过命令行参数（-r或-s）对指定范围内的算子进行灵活比对，适用于大型网络的快速调试；推荐先通过npy文件间的直接比对（9.4节）验证可疑结果；对差异显著的算子可进一步执行单算子比对（9.5节）以深入分析张量级精度差异；最后提出针对问题算子的优化策略，如修改、替换或融合算子。"
+        },
+        {
+          "title": "比对结果专家建议",
+          "node_id": "0031",
+          "start_index": 56,
+          "end_index": 56,
+          "summary": "该部分文档主要介绍模型精度比对结果的分析方法与指导原则。内容包括：比对结果中特殊符号（如“*”和“NaN”）的含义说明；通过专家建议（Advisor）快速定位常见精度问题算子；结合多种精度评价指标（如余弦相似度、KL散度等）识别复杂场景下的问题算子；利用命令行参数（-r或-s）实现指定范围内的算子精度比对，以提升大型网络的问题定位效率；通过npy文件间的直接比对排查可疑结果；对差异显著的算子进行单算子级别的详细精度分析；并提出针对问题算子的优化策略，如算子修改、替换或融合等。",
+          "nodes": [
+            {
+              "title": "概述",
+              "node_id": "0032",
+              "start_index": 57,
+              "end_index": 57,
+              "summary": "该部分文档介绍了精度比对结果的专家系统分析功能。主要内容包括：概述了专家系统工具的作用，即帮助用户分析精度比对结果，减少问题排查时间，并列出当前支持的分析类型（Float16溢出检测、输入不一致检测、整网一致性检测，后者包含问题节点检测、单点误差检测和一致性检测）；说明了使用前的环境准备要求（需安装pandas 1.3或更高版本）及功能约束（不支持单算子比对结果和使用--select或--range参数生成的结果分析）；详细描述了通过命令行使用-advisor参数进行比对结果分析的方法，包括命令格式、参数说明（-advisor自动启用Float16溢出检测）以及操作步骤（登录环境、生成JSON文件等）。"
+            },
+            {
+              "title": "使用前必读",
+              "node_id": "0033",
+              "start_index": 57,
+              "end_index": 57,
+              "summary": "该部分文档介绍了精度比对结果的专家系统分析功能。主要内容包括：概述了专家系统工具的作用，即帮助用户分析精度比对结果，减少问题排查时间，并列出当前支持的分析类型（Float16溢出检测、输入不一致检测、整网一致性检测，后者包含问题节点检测、单点误差检测和一致性检测）；说明了使用前的环境准备要求（需安装pandas 1.3或更高版本）及功能约束（不支持单算子比对结果和使用--select或--range参数生成的结果）；详细描述了通过命令行使用-advisor参数进行比对结果分析的方法，包括命令格式、参数说明（-advisor自动启用Float16溢出检测）以及操作步骤（登录CANN环境、生成JSON文件等）。"
+            },
+            {
+              "title": "通过命令行方式分析比对结果",
+              "node_id": "0034",
+              "start_index": 57,
+              "end_index": 58,
+              "summary": "该部分文档介绍了华为CANN平台中用于分析AI模型精度比对结果的专家系统工具。主要内容包括：  \n1. **概述**：说明精度比对工具仅提供运算结果差异比对，而专家系统可自动分析比对结果，帮助用户快速定位问题，当前支持Float16溢出检测、输入不一致检测和整网一致性检测（含问题节点检测、单点误差检测和一致性检测）。  \n2. **使用前准备**：要求安装pandas 1.3及以上版本，并列出不支持的场景（如单算子比对结果、使用--select或--range参数生成的结果）。  \n3. **命令行分析方式**：通过在msaccucmp.py compare命令中添加-advisor参数，在完成精度比对后自动执行专家分析，生成名为advisor_summary.txt的分析结果文件。  \n4. **脚本工具分析方式**：提供独立脚本mscmp_advisor.py，可直接对已有的比对结果.csv文件进行分析，支持指定输入文件、节点名称和输出路径，且输入文件大小不超过100MB。"
+            },
+            {
+              "title": "通过脚本工具方式分析比对结果",
+              "node_id": "0035",
+              "start_index": 58,
+              "end_index": 59,
+              "summary": "该部分文档主要介绍了使用CANN软件中的精度比对与专家分析工具的操作流程和相关说明。核心内容包括：  \n1. **精度比对操作步骤**：进入指定目录（${INSTALL_DIR}/tools/operator_cmp/compare，其中${INSTALL_DIR}默认为/usr/local/Ascend/cann），执行msaccucmp.py脚本进行模型输出比对，需指定MindSpore模型路径、标准Caffe模型路径、JSON配置文件及输出目录，并可启用-overflow_detection参数以检测Float16溢出。  \n2. **专家系统分析工具使用**：通过mscmp_advisor.py脚本对生成的比对结果CSV文件进行分析，支持指定输入节点和输出路径，生成名为advisor_summary.txt的优化建议报告。  \n3. **输出结果说明**：重点描述了Float16溢出检测功能，强调需在比对阶段启用-overflow_detection参数，且该功能不适用于量化与非量化Caffe模型之间的比对场景。  \n4. **环境准备与依赖**：包括生成JSON文件（通过atc工具）、配置PYTHONPATH环境变量等前置步骤。  \n整体围绕精度调试工具链的使用方法、参数配置、结果分析及限制条件展开。"
+            },
+            {
+              "title": "输出结果和优化建议",
+              "node_id": "0036",
+              "start_index": 59,
+              "end_index": 63,
+              "summary": "该部分文档主要介绍了CANN精度调试工具中比对结果的分析方法、专家系统功能及精度评价指标。核心内容包括：（1）专家系统分析的使用流程，涵盖输入节点配置、输出路径设置、精度比对命令执行及溢出检测参数（-overflow_detection）的必要性；（2）专家系统支持的四类检测机制：Float16溢出检测、输入不一致检测、整网一致性检测（含问题节点检测、单点误差检测和完全一致性判断），并针对每种场景提供具体的检测逻辑、示例输出和优化建议；（3）精度评价所采用的多个量化指标（如余弦相似度、相对欧氏距离、KL散度、平均绝对误差等）及其推荐阈值；（4）npy文件间精度比对的基本要求、支持的算法类型及命令行使用方式。整体聚焦于模型精度问题的自动诊断与调优指导。"
+            }
+          ]
+        },
+        {
+          "title": "计算精度评价指标",
+          "node_id": "0037",
+          "start_index": 63,
+          "end_index": 63,
+          "summary": "该部分文档主要介绍了精度比对的相关内容，包括精度评价指标的定义、可接受阈值及适用场景，并说明了在模型实际应用中若精度不达标时应排查后处理流程。文档详细列出了七种推荐的精度评价指标（如余弦相似度、欧氏相对距离、KL散度、平均绝对误差、均方根误差等）及其判断标准。此外，还描述了使用精度比对工具对两个npy文件进行比对的具体要求、支持的算法类型、命令行格式及脚本路径，强调比对前需确保数据格式转换和张量Shape一致。"
+        },
+        {
+          "title": "npy与npy文件之间的精度比对",
+          "node_id": "0038",
+          "start_index": 63,
+          "end_index": 64,
+          "summary": "该部分文档主要介绍了CANN精度调试工具中关于算子精度比对的评价指标和操作方法。首先说明了当模型实际应用中精度不达标时，应检查输出数据的后处理流程。接着详细列出了推荐的精度评价指标，包括CosineSimilarity、RelativeEuclideanDistance、KullbackLeiblerDivergence、MeanAbsoluteError和RootMeanSquareError，并给出了各自的可接受阈值及注意事项。随后描述了npy文件间精度比对的功能要求、支持的算法、命令格式及参数说明，并提供了具体的操作步骤，指导用户如何使用msaccucmp.py脚本执行文件比对并解读结果。文档强调比对结果需结合9.3节的评价指标判断是否满足精度要求。"
+        },
+        {
+          "title": "单算子比对",
+          "node_id": "0039",
+          "start_index": 65,
+          "end_index": 65,
+          "summary": "该部分文档主要介绍了CANN工具中单算子比对功能的使用方法。首先概述了compare命令通过不同参数实现单算子比对，包括配置输入输出路径、选择比对算子及设置数据格式等。随后详细说明了比对操作流程：以非量化AI处理器生成的dump数据与非量化Caffe模型npy文件比对为例，依次描述了登录环境、生成JSON配置文件、进入比对工具目录、执行比对命令等步骤，并强调了参数如-m、-g需指定数据父目录，以及-f和-cf参数需同时使用或不使用。文档还提示用户注意文件路径权限、示例名称需替换为实际值，并指出比对结果可参考图9-2和图9-3。",
+          "nodes": [
+            {
+              "title": "概述",
+              "node_id": "0040",
+              "start_index": 65,
+              "end_index": 65,
+              "summary": "该部分文档主要介绍了CANN工具中单算子比对功能的使用方法。首先概述了compare命令的关键参数，包括输入输出路径配置、比对算子选择及数据格式设置等。随后详细说明了比对操作流程：以非量化AI处理器生成的dump数据与Caffe模型npy文件比对为例，依次描述了登录环境、生成JSON配置文件、进入比对工具目录以及执行比对命令的具体步骤。文档强调了参数使用注意事项（如-f与-cf需同时指定或不指定）、目录结构要求（-m和-g需指向包含多个数据文件的父目录），并指出结果将输出至指定路径，具体参数含义可参考后续章节。此外，还提醒用户替换示例中的路径和文件名为实际环境中的对应内容，并确保对输出路径具有读写权限。"
+            },
+            {
+              "title": "比对操作",
+              "node_id": "0041",
+              "start_index": 65,
+              "end_index": 70,
+              "summary": "该部分文档详细介绍了CANN精度调试工具中“单算子比对”功能的使用方法和结果分析。主要内容包括：（1）概述单算子比对的核心参数配置，如输入/输出路径、比对算子选择及数据格式设置；（2）提供完整的操作步骤示例，涵盖环境准备、JSON文件生成、工具路径定位以及执行比对命令，特别说明了dump数据与npy文件的比对流程及参数使用注意事项；（3）详述比对结果的两种形式——概要结果（含误差统计指标如最大/最小绝对与相对误差）和完整结果（以CSV格式记录逐点误差数据），并解释各字段含义；（4）介绍可选的TopN数据比对模式，用于高效定位精度异常位置；（5）说明不同比对场景（输入或输出张量）下生成的结果文件命名规则与内容结构，帮助用户根据实际需求快速识别和分析算子精度问题。"
+            },
+            {
+              "title": "结果文件说明",
+              "node_id": "0042",
+              "start_index": 70,
+              "end_index": 72,
+              "summary": "该部分文档主要介绍单算子比对结果的分析方法和结果文件的生成规则。核心内容包括：  \n1. **误差分析流程**：比对完成后，按绝对误差或相对误差从大到小排序，提取TopN数据供用户评估算子精度；若不达标，可将数据交由开发人员进行内部逻辑分析。  \n2. **精度判断标准**：误差值越接近0表示精度越高，但是否达标需依据用户实际需求确定。  \n3. **结果文件类型与命名规则**：根据比对对象（输入/输出张量）、参数配置（如--topn、--ignore_single_op_result、--max_line）等条件，生成不同类型的文件，包括概要文件（summary.txt）、完整或拆分的CSV结果文件、以及TopN绝对/相对误差文件。  \n4. **特殊说明**：当算子名称过长时，会使用dump文件名替代，并生成映射文件simple_op_mapping.csv；file_index在启用--max_line时按规则编号；相关命令参数详见文档第11.2节。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "扩展功能",
+      "node_id": "0043",
+      "start_index": 73,
+      "end_index": 73,
+      "summary": "The partial document outlines extended functionalities related to debugging and data handling in AI computing environments, particularly focusing on overflow operator diagnostics and dump data management. Key points include: methods for collecting and parsing overflow operator data during floating-point exceptions; tools and procedures for analyzing top overflow operators; format conversion, viewing, and cross-platform (Windows to Linux) transformation of dump data files; acquisition of GPU/NPU mapping tables; preparation of custom algorithm .py files; parsing logs for AICPU custom operators; and batch handling of abnormal npy file naming scenarios. It also specifies storage paths and file naming conventions for overflow data, along with references to relevant documentation for different AI frameworks and deployment scenarios.",
+      "nodes": [
+        {
+          "title": "溢出算子数据采集与解析",
+          "node_id": "0044",
+          "start_index": 73,
+          "end_index": 76,
+          "summary": "该部分文档主要介绍了AI业务中用于精度调试的扩展功能，重点围绕浮点异常（溢出）问题的检测、数据采集、解析与定位方法。主要内容包括：溢出算子数据的采集方式（适用于离线推理和TensorFlow 1.15训练/在线推理场景）、溢出数据文件的存储路径与命名规则、dump数据文件的格式转换（如转换为npy和txt格式）、算子溢出数据文件的解析流程（生成可读的JSON格式结果），以及如何通过status字段分析具体的溢出错误类型（如整数运算溢出、浮点溢出、类型转换溢出等）。此外，还涉及GPU/NPU映射表获取、自定义算法文件准备、AICPU自定义算子日志解析、dump文件跨平台转换（Windows到Linux）及批量处理npy文件名异常等辅助功能。文档特别指出Atlas 350加速卡不支持算子溢出数据文件，并提供了详细的工具使用步骤和参数说明。"
+        },
+        {
+          "title": "Top 溢出算子解析",
+          "node_id": "0045",
+          "start_index": 77,
+          "end_index": 79,
+          "summary": "该部分文档主要介绍了CANN精度调试工具中两个扩展功能：Top溢出算子解析和dump数据文件Format转换。首先，针对AI业务运行中可能出现的算子溢出问题，文档说明了如何通过msaccucmp.py脚本执行溢出检测，生成并分析Debug file与dump文件，以定位TopN溢出算子，并详细描述了相关命令格式、参数说明（如-d、-out、-n）、执行步骤及结果文件内容结构。其次，文档介绍了dump数据文件的Format转换功能，允许用户将AI处理器生成的dump文件转换为numpy格式以便查看，包括转换命令、支持的参数（如-d、-out、-f等）及其使用说明。两部分均强调了文件路径权限和工具脚本的存放位置（默认为/usr/local/Ascend/cann/tools/operator_cmp/compare）。"
+        },
+        {
+          "title": "dump 数据文件 Format转换",
+          "node_id": "0046",
+          "start_index": 79,
+          "end_index": 82,
+          "summary": "该部分文档主要介绍了CANN精度调试工具中关于dump数据文件的Format转换和查看功能。核心内容包括：  \n1. **溢出算子数据说明**：描述了timestamp、输入（*.input.*.npy）和输出（*.output.*.npy）数据文件的命名规则及其包含的关键信息（如数据格式、维度、类型、最大值、最小值、均值）。  \n2. **Format转换功能**：通过msaccucmp.py脚本将AI处理器生成的dump文件转换为numpy等格式，便于分析；详细说明了命令参数（如-d、-out、-f、-s、-o、-i、-c、-v、-t）及其用途，并列出了支持的内置格式转换类型（如FRACTAL_NZ、HWCN、NC1HWC0、NCHW、NHWC等之间的相互转换）。  \n3. **自定义Format转换**：指导用户如何准备符合命名规范和函数接口要求的自定义转换脚本（convert_{from}_to_{to}.py），并说明其存放路径和安全注意事项。  \n4. **dump文件查看方法**：提供使用相同脚本将dump文件转换为numpy格式后再转为txt文件以供查看的操作流程及对应参数说明。"
+        },
+        {
+          "title": "查看dump数据文件",
+          "node_id": "0047",
+          "start_index": 82,
+          "end_index": 84,
+          "summary": "The partial document outlines procedures and specifications related to data format conversion and dump file analysis within the CANN (Compute Architecture for Neural Networks) precision debugging toolkit. Key points include:\n\n1. **Format Conversion Rules**:  \n   - Defines required Python function signature (`convert`) for shape transformation of array data.  \n   - Specifies that `.py` conversion files must be placed in a `format_convert` directory.\n\n2. **Dump File Viewing Process**:  \n   - Describes using the `msaccucmp.py` script to convert AI processor-generated dump files into numpy-compatible formats (e.g., `.npy`, `.bin`).  \n   - Details command-line parameters (`-d`, `-out`, `-v`, `-t`) for specifying input files, output paths, dump versions, and output types.  \n   - Provides steps to further convert resulting numpy files into human-readable `.txt` files using NumPy.\n\n3. **GPU/NPU Mapping Table Generation**:  \n   - Explains how to generate a JSON file from an OM model using ATC.  \n   - Describes executing `msaccucmp.py compare` with `-map` to produce a CSV mapping file correlating GPU and NPU operators, using directories containing comparison data and the generated JSON.  \n   - Notes directory structure requirements and user permission considerations.\n\nThe document serves as a technical guide for developers performing precision debugging, format conversion, and cross-platform operator mapping in Ascend CANN environments."
+        },
+        {
+          "title": "GPU/NPU 映射表获取",
+          "node_id": "0048",
+          "start_index": 84,
+          "end_index": 85,
+          "summary": "该部分文档主要介绍了华为CANN平台下精度调试工具的两项扩展功能：GPU/NPU映射表获取和自定义算法.py文件准备。首先，详细说明了如何通过ATC工具生成JSON文件，并使用msaccucmp.py脚本在指定目录结构下执行命令以获取GPU与NPU算子之间的映射关系，输出为mapping_*.csv文件，并解释了输出参数（如Index、OpType、NPUDump、GroundTruth等）的含义。其次，描述了用户如何编写自定义精度比对算法的Python文件，包括文件命名规范（alg_{algorithm_name}.py）、函数接口定义（compare函数）、输入参数（my_output_dump_data、ground_truth_dump_data、args）及返回值格式要求。"
+        },
+        {
+          "title": "自定义算法 .py文件准备",
+          "node_id": "0049",
+          "start_index": 85,
+          "end_index": 86,
+          "summary": "该部分文档主要介绍了CANN精度调试工具的扩展功能，包括自定义算法比对和AICPU自定义算子日志解析两部分内容。首先，说明了用户如何准备用于精度比对的自定义Python算法文件，包括文件命名规范（alg_{algorithm_name}.py）、函数接口定义（compare函数）、参数说明（my_output_dump_data、ground_truth_dump_data和args）以及返回值格式，并强调需在用户目录下创建algorithm目录存放算法文件且确保读写权限。其次，介绍了AICPU自定义算子日志解析功能，通过dump_parser.py脚本解析dump数据文件中的日志信息，详细说明了命令格式（python3 dump_parser.py save_log -d <dump_file> [-out <output>]）、命令行参数（-d为必选，指定dump文件；-out为可选，指定输出目录），以及操作步骤和结果文件命名规则，并提醒避免使用非当前用户的目录以防止提权风险。"
+        },
+        {
+          "title": "AICPU 自定义算子日志解析",
+          "node_id": "0050",
+          "start_index": 86,
+          "end_index": 86,
+          "summary": "该部分文档主要介绍了CANN社区版精度调试工具中AICPU自定义算子日志解析功能的使用方法。内容包括：需在当前用户目录下创建“algorithm”目录用于保存.py文件并确保读写权限；通过dump_parser.py脚本解析dump数据文件中的AICPU自定义算子日志，并将结果保存为日志文件；详细说明了命令格式、参数（-d必选，指定dump文件；-out可选，指定输出目录，默认为当前目录）及注意事项（避免使用其他用户目录以防提权风险）；并给出了具体操作步骤，包括进入脚本所在路径（如/usr/local/Ascend/cann/tools/operator_cmp/compare）和执行解析命令的示例。"
+        },
+        {
+          "title": "生成npy文件名异常情况批量处理",
+          "node_id": "0051",
+          "start_index": 87,
+          "end_index": 88,
+          "summary": "该部分文档主要涵盖两个功能模块：一是针对 TensorFlow 模型在使用 tfdbg 生成 dump 数据时因算子名被截断导致 npy 文件名异常的问题，提供了一套完整的批量处理流程，包括通过调试命令获取 tensor 名称、生成对应索引脚本、执行导出命令、重命名文件（将“/”替换为“_”，“:”替换为“.”）等步骤，以确保 npy 文件名符合精度比对要求；二是介绍如何将 Windows 系统下生成的 dump 文件转换为 Linux 兼容格式，通过提供的 Python 脚本 windows_to_linux.py 批量替换文件中的换行符（\\r\\n 替换为 \\n），并处理路径权限与文件读写逻辑，确保 dump 文件在 Linux 环境中可正常使用。"
+        },
+        {
+          "title": "Windows dump 文件转换为 Linux dump 文件",
+          "node_id": "0052",
+          "start_index": 88,
+          "end_index": 89,
+          "summary": "The partial document describes a procedure for converting Windows dump files to Linux-compatible format. It includes a Python script (windows_to_linux.py) that replaces Windows line endings (\\r\\n) with Linux line endings (\\n). The process involves three main steps: preparing the conversion script on Linux, copying Windows dump files to a Linux directory, and executing the script with specified input and output paths. The script handles both individual files and entire directories, includes error checking for file access and existence, and provides success or failure messages during conversion. This content is part of the CANN Community Edition Precision Debugging Tool User Guide, under the \"Extended Features\" section."
+        }
+      ]
+    },
+    {
+      "title": "附录",
+      "node_id": "0053",
+      "start_index": 90,
+      "end_index": 90,
+      "summary": "该部分文档为附录章节，主要涵盖精度比对工具的相关技术规范和说明，包括数据格式要求、命令格式说明、完整比对结果的参数解释，以及原始 compare_vector.py 脚本所采用的精度比对方法。特别强调了 msaccucmp.py 脚本在处理 dump 和 npy 文件时对文件命名的具体要求。",
+      "nodes": [
+        {
+          "title": "数据格式要求",
+          "node_id": "0054",
+          "start_index": 90,
+          "end_index": 91,
+          "summary": "该部分文档为附录章节，主要涵盖以下内容：  \n1. **数据格式要求**：详细说明了msaccucmp.py精度比对工具所支持的dump和npy文件的命名规则，包括非量化与量化离线模型在AI处理器上生成的数据文件命名格式，并对各字段（如op_type、op_name、task_id、stream_id、timestamp等）的命名规范和字符限制作出规定。  \n2. **命令格式说明**：介绍了精度比对的命令行通用格式，列出核心参数（如-m、-g、-out、-alg等）及其作用，为用户执行精度比对操作提供指令参考。"
+        },
+        {
+          "title": "命令格式说明",
+          "node_id": "0055",
+          "start_index": 91,
+          "end_index": 97,
+          "summary": "该部分文档主要涵盖以下内容：  \n1. **数据文件命名规则**：详细说明了非量化和量化离线模型在AI处理器上运行生成的dump数据文件的命名格式，包括算子类型（op_type）、算子名（op_name）、任务ID、Stream ID、时间戳等字段的组成规则及特殊字符处理方式。  \n2. **精度比对命令行格式与参数说明**：介绍了通用精度比对命令（msaccucmp.py compare）的完整语法，并逐项解释了各命令行参数的功能、使用场景及是否必选，包括模型dump路径（-m、-g）、融合规则文件（-f、-cf、-q）、输出路径（-out）、映射表生成（-map）、自定义脚本（-c）、比对算法（-alg）、算法选项（-a）、dump文件版本（-v）、算子比对范围（-r、-s）、最大比对字节数（-max）、溢出检测（-overflow_detection）和专家建议（-advisor）等。  \n3. **单算子比对命令及参数**：描述了针对单个算子进行精度比对的专用命令格式及相关参数，如指定算子名（-op）、输入/输出张量索引（-i/-o）、误差结果展示数量（-n）、忽略完整结果输出（--ignore_single_op_result）和CSV文件行数限制（-ml）等。  \n4. **完整比对结果字段说明**：列出了精度比对结果CSV文件中各列的含义，包括算子ID（Index）、算子类型（OpType）、NPU与Ground Truth模型的算子名与数据类型、张量索引（TensorIndex）、Shape、溢出状态（OverFlow）以及多种算法（如余弦相似度、最大绝对误差等）的比对结果。"
+        },
+        {
+          "title": "完整比对结果参数说明",
+          "node_id": "0056",
+          "start_index": 97,
+          "end_index": 98,
+          "summary": "该部分文档主要介绍了CANN社区版精度调试工具中与单算子及完整比对结果相关的参数说明和精度比对方式。首先描述了参数“-ml/--max_line”的作用，用于控制单算子比对时生成的CSV文件最大条目数（范围[10000,1000000]，默认1000000），在数据量大时可拆分输出多个文件，并指出其仅在配置-op时生效、在启用--ignore_single_op_result时不生效。随后详细列出了完整比对结果中各字段的含义，包括算子ID（Index）、运行序列（OpSequence）、算子类型（OpType）、模型算子名（NPUDump、GroundTruth）、数据类型（DataType）、内存地址（Address）、张量索引（TensorIndex）、张量形状（Shape）、溢出状态（OverFlow）以及多种精度比对指标（如余弦相似度、最大绝对误差、累积相对误差、欧氏相对距离、KL散度、标准差、平均绝对误差、均方根误差、最大/平均相对误差等），并解释了各指标的取值范围和结果解读方式。最后提及“CompareFailReason”字段用于说明算子无法比对的原因，并简要引入后续关于原compare_vector.py精度比对方式及数据准备的内容。"
+        },
+        {
+          "title": "原compare_vector.py 精度比对方式",
+          "node_id": "0057",
+          "start_index": 98,
+          "end_index": 98,
+          "summary": "该部分文档主要介绍了多种用于精度比对的算法指标及其含义，包括累积相对误差（AccumulatedRelativeError）、欧氏相对距离（RelativeEuclideanDistance）、KL散度（KullbackLeiblerDivergence）、标准差（StandardDeviation）、平均绝对误差（MeanAbsoluteError）、均方根误差（RootMeanSquareError）、最大相对误差（MaxRelativeError）和平均相对误差（MeanRelativeError）。每种指标均说明了其取值范围（0到无穷大）及数值大小与数据相似性或误差程度的关系。此外，还解释了MeanAbsoluteError与RootMeanSquareError之间的关系及其组合所反映的不同误差特征，并描述了比对失败原因（CompareFailReason）的判断逻辑，例如当余弦相似度为1时需检查张量是否为标量。最后提到了该比对方法源自compare_vector.py脚本，属于CANN社区版精度调试工具用户指南的附录内容。",
+          "nodes": [
+            {
+              "title": "比对数据准备",
+              "node_id": "0058",
+              "start_index": 98,
+              "end_index": 98,
+              "summary": "该部分文档主要介绍了多种用于精度比对的误差度量参数及其含义，包括累积相对误差（AccumulatedRelativeError）、欧氏相对距离（RelativeEuclideanDistance）、KL散度（KullbackLeiblerDivergence）、标准差（StandardDeviation）、平均绝对误差（MeanAbsoluteError）、均方根误差（RootMeanSquareError）、最大相对误差（MaxRelativeError）和平均相对误差（MeanRelativeError）。每种参数均说明了其取值范围（通常为0到无穷大）、数值大小与相似程度的关系，以及在特定组合下（如MAE与RMSE的关系）所反映的数据偏差特征。此外，还描述了比对失败原因（CompareFailReason）的判断逻辑，例如当余弦相似度为1时，需检查张量是否为标量（Shape为空或全为1），并给出相应提示。文档末尾提及该内容属于“compare_vector.py 精度比对方式”章节，源自CANN社区版精度调试工具用户指南附录。",
+              "nodes": [
+                {
+                  "title": "数据格式要求",
+                  "node_id": "0059",
+                  "start_index": 99,
+                  "end_index": 99,
+                  "summary": "该部分文档主要说明了精度比对工具的数据格式要求和离线模型dump数据文件的准备方法。首先指出compare_vector.py工具将在后续版本下线，推荐使用msaccucmp.py工具，并强调当前版本支持多种比对方式，因此对dump和npy文件的命名有明确规范，详细列出了不同类型模型（如Caffe/TensorFlow、量化/非量化、原始/离线）对应的数据文件命名格式及命名规则（如op_name、timestamp等字段的格式要求）。其次，介绍了准备离线模型dump数据的前提条件，包括模型转换、量化处理（如适用）、工程编译与运行验证，并说明了AMCT量化过程中生成的融合规则文件在精度比对中的作用，以及Docker环境下不支持dump功能。最后，提及可通过aclInit()或aclmdlSetDump()两种接口实现dump功能，并指引用户参考相关开发文档获取接口使用详情。"
+                },
+                {
+                  "title": "准备离线模型 dump数据文件",
+                  "node_id": "0060",
+                  "start_index": 99,
+                  "end_index": 102,
+                  "summary": "该部分文档主要介绍了华为CANN社区版精度调试工具中关于数据格式要求和dump数据准备的规范与操作流程。主要内容包括：\n\n1. **数据格式与命名规则**：明确指出compare_vector.py工具将下线，推荐使用msaccucmp.py；详细规定了不同模型类型（如Caffe/TensorFlow、量化/非量化、原始/离线模型）生成的dump和npy文件的命名格式，强调op_name、op_type需符合特定正则表达式，timestamp为16位时间戳，output_index和task_id为数字。\n\n2. **离线模型dump数据准备流程**：\n   - 前提条件：需先完成模型转换（ATC工具）及必要时的量化（AMCT工具），并确保应用工程可正常编译运行。\n   - 支持通过aclInit()或aclmdlSetDump()接口启用dump功能。\n   - 详细说明如何配置acl.json文件，包括dump_list（指定模型名和算子列表）、dump_path（存储路径）、dump_mode（输入/输出/全部）和dump_op_switch（单算子开关）等字段的用法与注意事项。\n   - 描述dump数据生成后的存储路径结构及文件命名规则，并指出特殊算子（如无输出或非AI Core执行的算子）可能无法生成dump数据。\n\n3. **Caffe模型npy文件准备要求**：\n   - 用户需自行搭建Caffe环境生成npy文件，文档仅提供参考样例。\n   - 要求npy文件以{op_name}.{output_index}.{timestamp}.npy格式命名，且output_index应为0以确保比对有效性。\n   - 强调需去除模型中的in-place操作以避免命名与实际输出不一致的问题，并提供相关脚本命令示例。\n   - 量化场景下需保证Caffe推理与AMCT压缩时的预处理数据一致，并给出生成npy文件的示例代码。"
+                },
+                {
+                  "title": "准备Caffe模型npy文件",
+                  "node_id": "0061",
+                  "start_index": 102,
+                  "end_index": 103,
+                  "summary": "The partial document outlines procedures for preparing Caffe and TensorFlow model data files in numpy (.npy) format for precision comparison purposes. It specifies that the software does not generate these files automatically, requiring users to set up their own Caffe or TensorFlow environments. For Caffe, it details naming conventions for .npy files ({op_name}.{output_index}.{timestamp}.npy), mandates output_index to be 0, and emphasizes removing in-place operations from the model’s prototxt file—especially in quantization scenarios—and provides a command-line example using inplace_layer_process.py. It also includes sample code to dump layer outputs as .npy files during inference, with special character handling in names. For TensorFlow, it instructs users to integrate tfdbg (TensorFlow Debugger) into their application—either via Estimator hooks or session wrappers—to generate .npy files. The document notes that .npy files can later be converted to binary dump files using instructions in section 11.4.3 and references external resources like forum posts for additional guidance."
+                },
+                {
+                  "title": "准备TensorFlow 模型npy文件",
+                  "node_id": "0062",
+                  "start_index": 103,
+                  "end_index": 105,
+                  "summary": "该部分文档主要介绍了如何为Caffe和TensorFlow模型生成用于精度比对的npy文件，以及Tensor比对的相关说明与约束。对于Caffe模型，通过在代码中添加数据转储逻辑，可自动生成符合命名规范的npy文件；而TensorFlow模型则需借助tfdbg调试工具，在Estimator或session.run模式下配置调试钩子，并通过交互式命令导出张量数据为npy格式。文档详细说明了npy文件的命名规则（{op_name}.{output_index}.{timestamp}.npy）、生成步骤、异常处理方法（如文件名过长或不符合规范时的手动重命名或批量处理），并指出部分算子因图优化（如融合、结构修改）可能无法比对。此外，还强调了新旧比对方式的区别，推荐使用新的Tensor命令行比对方式，并列出了比对的前提条件和适用场景限制。"
+                }
+              ]
+            },
+            {
+              "title": "Tensor 比对",
+              "node_id": "0063",
+              "start_index": 105,
+              "end_index": 105,
+              "summary": "该部分文档主要说明了用于精度比对的.npy文件命名规则及其相关约束条件，并介绍了Tensor比对的功能与限制。命名规则要求文件名为“{op_name}.{output_index}.{timestamp}.npy”，其中op_name需符合特定正则表达式，timestamp为16位时间戳，output_index为0-9的数字；若文件名超过255字符则不支持精度比对，且不符合规则的文件需手动重命名或批量处理。在Tensor比对方面，文档指出旧命令行比对方式不再演进，推荐使用新方式；新方式支持整网和单算子比对，但要求比对数据来自相同模型（或至少包含同名算子）。此外，文档还列出了若干约束：如FastRCNN中特定算子精度不达标属正常现象；图编译过程中的算子融合或结构性修改可能导致部分算子无法比对。",
+              "nodes": [
+                {
+                  "title": "说明与约束",
+                  "node_id": "0064",
+                  "start_index": 105,
+                  "end_index": 106,
+                  "summary": "该部分文档主要介绍了Tensor精度比对的相关规则、约束条件及数据准备要求。首先说明了npy文件的命名规范（格式为{op_name}.{output_index}.{timestamp}.npy），并指出文件名过长或不符合规则时的处理方式。接着阐述了新旧比对方式的差异，推荐使用新的Tensor命令行比对方式，并说明其支持整网或单算子比对。文档列出了多项比对约束，包括模型一致性要求、特定网络（如FastRCNN）的精度判断标准、图编译过程中算子融合或结构修改对比对的影响、Shape或Format不一致导致无法比对的情况，以及量化模型中仅反量化输出可比对等限制。最后，通过表格详细说明了不同场景下执行Tensor比对所需准备的My Output、Ground Truth及对应的模型或融合规则文件。"
+                },
+                {
+                  "title": "比对数据说明",
+                  "node_id": "0065",
+                  "start_index": 106,
+                  "end_index": 106,
+                  "summary": "该部分文档主要说明了在进行Tensor比对时影响比对结果有效性的几种典型场景及对应的数据准备要求。首先列举了四种导致算子比对不可信的情况：算子Shape不一致或Format不支持转换、模型转换引入额外预处理（如AIPP导致输入格式变化）、未关闭融合规则导致量化算子融合、以及量化算子输出未经反量化无法直接比对。随后，通过“表11-6”详细规定了六类比对场景下所需准备的“待比对数据”（My Output）、“标准数据”（Ground Truth）以及对应的模型文件或量化融合规则文件，特别区分了非量化与量化模型、不同框架（Caffe/TensorFlow）以及是否涉及AI处理器运行生成的dump数据等情况，强调在涉及量化与非量化数据比对时必须使用量化融合规则文件。"
+                },
+                {
+                  "title": "整网比对",
+                  "node_id": "0066",
+                  "start_index": 107,
+                  "end_index": 109,
+                  "summary": "该部分文档详细介绍了华为CANN社区版精度调试工具中Tensor比对功能的两种模式：整网比对和单算子比对。主要内容包括：\n\n1. **整网比对**：\n   - 提供了命令行格式及各参数说明（如-l、-r、-o、-f、-q、-csv、-custom等），用于比对My Output模型与Ground Truth模型的全网输出数据。\n   - 强调了安全建议，避免使用其他用户的目录以防提权风险。\n   - 描述了完整的操作步骤：设置环境变量、生成.json层信息文件、执行比对命令。\n   - 说明了比对结果文件中的各项指标含义，包括余弦相似度、最大绝对误差、累积相对误差、欧氏相对距离、KL散度和标准差等，并解释了特殊值（如NaN、inf、*）的含义。\n\n2. **单算子比对**：\n   - 在整网比对基础上增加了针对特定算子的比对能力，新增参数-d（指定算子名）、-t（输入/输出类型）、-i（索引）。\n   - 同样提供了命令格式、参数说明、安全提示及使用前提（需根据数据类型选择-f或-q）。\n   - 虽未完整列出操作步骤，但结构与整网比对一致，强调对单个算子的精细化精度分析。\n\n整体聚焦于如何通过命令行工具进行模型精度比对，适用于非量化或量化场景，并指导用户正确准备数据、执行命令及解读结果。"
+                },
+                {
+                  "title": "单算子比对",
+                  "node_id": "0067",
+                  "start_index": 109,
+                  "end_index": 111,
+                  "summary": "该部分文档主要介绍了华为CANN社区版精度调试工具中单算子Tensor比对的功能与操作流程。核心内容包括：比对结果的含义说明（如“*”、“NaN”、余弦相似度和KL散度异常值的解释）；compare_vector.py命令行工具的完整参数说明（如-l、-r指定比对数据路径，-o指定输出目录，-d指定算子名等）；执行比对的具体步骤（包括环境变量设置、JSON文件生成、运行比对命令）；以及比对结果文件的格式与字段含义（概要结果txt文件包含误差统计信息，完整结果csv文件包含逐点数据及绝对/相对误差）。此外，还简要提及npy文件转dump文件的功能（注明该功能将在后续版本下线），并给出转换脚本的基本用法。"
+                }
+              ]
+            },
+            {
+              "title": "如何进行 npy文件转 dump文件",
+              "node_id": "0068",
+              "start_index": 111,
+              "end_index": 113,
+              "summary": "该部分文档主要涵盖以下内容：  \n1. **单算子比对结果说明**：介绍比对结果的存储格式（CSV文件命名规则及数据量限制），并详细解释图11-7中各列含义，包括数据坐标（NCHW）、My Output与Ground Truth模型的dump值、绝对误差（AbsoluteError）和相对误差（RelativeError）的计算方式及特殊处理（如Ground Truth为0时相对误差显示为“-”）。  \n2. **npy文件转dump文件方法**：说明使用dump_data_conversion.py脚本将Caffe或TensorFlow模型的npy格式原始数据转换为二进制dump文件的操作流程，包括命令行参数（-type、-target、-i、-o）的含义、输入输出路径要求、文件命名规范（如{op_name}.{output_index}.{timestamp}.npy）、支持的数据类型（caffe、tf等），以及系统资源建议（内存不低于15GB，大文件需更高内存）。同时指出该功能将在后续版本下线，推荐使用10.3节的转换方法。  \n3. **dump数据文件Format转换**：介绍通过shape_conversion.py脚本将AI处理器生成的dump文件转换为numpy格式以便查看，包括脚本位置、命令格式及参数说明（-i、-format、-o等），并重申该功能也将被后续版本替代。"
+            },
+            {
+              "title": "如何进行 dump数据文件 Format转换",
+              "node_id": "0069",
+              "start_index": 113,
+              "end_index": 115,
+              "summary": "该部分文档主要介绍了华为CANN工具链中用于数据格式转换的两种核心功能：一是通过dump_data_conversion.py脚本在numpy文件与dump文件之间相互转换，二是通过shape_conversion.py脚本对dump数据文件进行Format格式转换。文档详细说明了各脚本的使用方法、命令参数（如-i输入路径、-o输出路径等）、文件命名规范、支持的数据格式类型（如FRACTAL_NZ、NCHW、NHWC等），以及内存和权限相关的使用建议。此外，还提供了自定义Format转换脚本的开发规范，包括文件命名规则、函数接口要求及存放目录结构，并强调了安全性和兼容性注意事项。文档同时指出部分功能将在后续版本下线，推荐使用替代方案。"
+            },
+            {
+              "title": "如何查看 dump数据文件",
+              "node_id": "0070",
+              "start_index": 116,
+              "end_index": 116,
+              "summary": "该部分文档主要说明了如何查看CANN工具生成的dump数据文件。由于dump文件无法直接通过文本工具读取，文档推荐使用指定脚本将其转换为numpy格式，再进一步转为txt文件进行查看。具体步骤包括：以安装用户登录开发环境；进入CANN安装目录下的指定工具路径；运行dump_data_conversion.py脚本将dump文件转为numpy文件；最后通过Python调用NumPy库加载numpy文件并保存为txt格式。文档同时指出该功能将在后续版本中下线，建议参考前文10.4节的方法，并提醒转换后的txt文件将丢失原始的维度和数据类型信息。"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "page": 1,
+      "content": "CANN社区版\n9.1.0-beta1\n精度调试工具用户指南\n文档版本 01\n发布日期 2026-05-20\n华为技术有限公司"
+    },
+    {
+      "page": 2,
+      "content": " \n \n版权所有  © 华为技术有限公司  2026。 保留一切权利。\n非经本公司书面许可，任何单位和个人不得擅自摘抄、复制本文档内容的部分或全部，并不得以任何形式传\n播。\n \n商标声明\n和其他华为商标均为华为技术有限公司的商标。\n本文档提及的其他所有商标或注册商标，由各自的所有人拥有。\n \n注意\n您购买的产品、服务或特性等应受华为公司商业合同和条款的约束，本文档中描述的全部或部分产品、服务或\n特性可能不在您的购买或使用范围之内。除非合同另有约定，华为公司对本文档内容不做任何明示或暗示的声\n明或保证。\n由于产品版本升级或其他原因，本文档内容会不定期进行更新。除非另有约定，本文档仅作为使用指导，本文\n档中的所有陈述、信息和建议不构成任何明示或暗示的担保。\n  \n \n \n \n \n \n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 i"
+    },
+    {
+      "page": 3,
+      "content": " \n \n安全声明\n \n产品生命周期政策\n华为公司对产品生命周期的规定以“产品生命周期终止政策”为准，该政策的详细内容请参见如下网址：\nhttps://support.huawei.com/ecolumnsweb/zh/warranty-policy\n \n漏洞处理流程\n华为公司对产品漏洞管理的规定以“漏洞处理流程”为准，该流程的详细内容请参见如下网址：\nhttps://www.huawei.com/cn/psirt/vul-response-process\n如企业客户须获取漏洞信息，请参见如下网址：\nhttps://securitybulletin.huawei.com/enterprise/cn/security-advisory\n \n华为初始证书权责说明\n华为公司对随设备出厂的初始数字证书，发布了“华为设备初始数字证书权责说明”，该说明的详细内容请参\n见如下网址：\nhttps://support.huawei.com/enterprise/zh/bulletins-service/ENEWS2000015766\n \n华为企业业务最终用户许可协议 (EULA)\n本最终用户许可协议是最终用户（个人、公司或其他任何实体）与华为公司就华为软件的使用所缔结的协议。\n最终用户对华为软件的使用受本协议约束，该协议的详细内容请参见如下网址：\nhttps://e.huawei.com/cn/about/eula\n \n产品资料生命周期策略\n华为公司针对随产品版本发布的售后客户资料（产品资料），发布了“产品资料生命周期策略”，该策略的详\n细内容请参见如下网址：\nhttps://support.huawei.com/enterprise/zh/bulletins-website/ENEWS2000017760\n \n \n \n \n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 ii"
+    },
+    {
+      "page": 4,
+      "content": "目 录\n1 简介..............................................................................................................................................1\n2 使用前准备 ..................................................................................................................................3\n3 GPU vs NPU （TensorFlow 1.15 训练/在线推理） ............................................................... 5\n3.1 总体说明 ......................................................................................................................................................................................5\n3.2 准备GPU侧npy文件............................................................................................................................................................. 6\n3.3 准备NPU侧dump数据和计算图文件 .............................................................................................................................. 8\n3.4 比对操作和分析 ...................................................................................................................................................................... 12\n4 GPU vs NPU （TensorFlow 离线推理） ............................................................................... 14\n4.1 总体说明 ................................................................................................................................................................................... 14\n4.2 准备TensorFlow 模型npy文件.........................................................................................................................................15\n4.3 准备全网层信息文件 ............................................................................................................................................................. 17\n4.4 比对操作和分析 ...................................................................................................................................................................... 18\n5 GPU vs NPU （ONNX离线推理） .........................................................................................20\n5.1 总体说明 ................................................................................................................................................................................... 20\n5.2 准备ONNX模型npy文件.................................................................................................................................................. 21\n5.3 准备全网层信息文件 ............................................................................................................................................................. 22\n5.4 比对操作和分析 ...................................................................................................................................................................... 22\n6 GPU/CPU vs NPU （Caffe离线推理） ................................................................................. 25\n6.1 总体说明 ................................................................................................................................................................................... 25\n6.2 Caffe模型npy文件准备 ......................................................................................................................................................28\n6.3 准备模型文件和量化信息文件 ............................................................................................................................................ 29\n6.4 比对操作和分析 ...................................................................................................................................................................... 30\n7 NPU vs NPU （离线推理） ..................................................................................................... 33\n7.1 总体说明 ................................................................................................................................................................................... 33\n7.2 准备离线模型文件 ..................................................................................................................................................................35\n7.3 准备离线模型 dump数据文件 ............................................................................................................................................37\n7.4 比对操作和分析 ...................................................................................................................................................................... 46\n8 比对结果说明 ............................................................................................................................50\n9 比对结果分析 ............................................................................................................................51\n9.1 比对结果分析指导 ..................................................................................................................................................................51CANN社区版\n精度调试工具用户指南 目 录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 iii"
+    },
+    {
+      "page": 5,
+      "content": "9.2 比对结果专家建议 ..................................................................................................................................................................51\n9.2.1 概述........................................................................................................................................................................................ 52\n9.2.2 使用前必读 ........................................................................................................................................................................... 52\n9.2.3 通过命令行方式分析比对结果 .........................................................................................................................................52\n9.2.4 通过脚本工具方式分析比对结果 .................................................................................................................................... 53\n9.2.5 输出结果和优化建议 .......................................................................................................................................................... 54\n9.3 计算精度评价指标 ..................................................................................................................................................................58\n9.4 npy与npy文件之间的精度比对 ........................................................................................................................................58\n9.5 单算子比对 ............................................................................................................................................................................... 60\n9.5.1 概述........................................................................................................................................................................................ 60\n9.5.2 比对操作 ................................................................................................................................................................................60\n9.5.3 结果文件说明 ....................................................................................................................................................................... 65\n10 扩展功能 ................................................................................................................................. 68\n10.1 溢出算子数据采集与解析 .................................................................................................................................................. 68\n10.2 Top 溢出算子解析 ................................................................................................................................................................ 72\n10.3 dump 数据文件 Format转换........................................................................................................................................... 74\n10.4 查看dump数据文件 .......................................................................................................................................................... 77\n10.5 GPU/NPU 映射表获取 ........................................................................................................................................................ 79\n10.6 自定义算法 .py文件准备 .................................................................................................................................................... 80\n10.7 AICPU 自定义算子日志解析 ..............................................................................................................................................81\n10.8 生成npy文件名异常情况批量处理 ................................................................................................................................ 82\n10.9 Windows dump 文件转换为 Linux dump 文件.......................................................................................................... 83\n11 附录......................................................................................................................................... 85\n11.1 数据格式要求 ........................................................................................................................................................................ 85\n11.2 命令格式说明 ........................................................................................................................................................................ 86\n11.3 完整比对结果参数说明 .......................................................................................................................................................92\n11.4 原compare_vector.py 精度比对方式 ............................................................................................................................. 93\n11.4.1 比对数据准备 .....................................................................................................................................................................93\n11.4.1.1 数据格式要求 ................................................................................................................................................................. 94\n11.4.1.2 准备离线模型 dump数据文件 .................................................................................................................................. 94\n11.4.1.3 准备Caffe模型npy文件........................................................................................................................................... 97\n11.4.1.4 准备TensorFlow 模型npy文件............................................................................................................................... 98\n11.4.2 Tensor 比对......................................................................................................................................................................100\n11.4.2.1 说明与约束 ................................................................................................................................................................... 100\n11.4.2.2 比对数据说明 ...............................................................................................................................................................101\n11.4.2.3 整网比对 ....................................................................................................................................................................... 102\n11.4.2.4 单算子比对 ................................................................................................................................................................... 104\n11.4.3 如何进行 npy文件转 dump文件.............................................................................................................................. 106\n11.4.4 如何进行 dump数据文件 Format转换...................................................................................................................108\n11.4.5 如何查看 dump数据文件 ............................................................................................................................................ 111CANN社区版\n精度调试工具用户指南 目 录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 iv"
+    },
+    {
+      "page": 6,
+      "content": "1 简介\n相比于业界标杆算子， 昇腾自研算子在 AI处理器上的运算结果可能存在差异：\n●模型迁移 ：原始模型（基于 GPU）在迁移到 昇腾环境进行训练或在线推理时， 昇\n腾自研算子的运算结果与业界标杆算子存在差异。\n●模型转换 ：ATC工具转换模型时，会对模型进行算子消除、算子融合、算子拆分\n等优化，这些操作可能会造成 昇腾自研算子运算结果与业界标杆算子运算结果的\n差异。\n●模型兼容 ：ATC工具转换的离线模型，由于 CANN软件版本迭代、模型版本迭代、\n模型优化、硬件升级或 ATC转换前开启或关闭了算子融合功能，可能会造成升级\n或优化后的离线模型存在精度下降问题。\n为了帮助开发人员快速解决算子精度问题，精度调试工具提供了 昇腾自研算子运算结\n果与业界标杆算子运算结果之间的比对功能。\n有关ATC的详细介绍请参见《 ATC离线模型编译工具 》。\n精度比对总体流程\n精度比对总体流程如下：\n说明\n以下流程图描述的是当前工具支持的三类场景：\n● GPU vs Ascend NPU （训练）：表示训练原始模型（基于 GPU）迁移到 昇腾NPU环境后，二\n者的精度数据对比。对应章节 3 GPU vs NPU （TensorFlow 1.15 训练/在线推理） 。\n● GPU/CPU vs Ascend NPU （推理）：表示推理原始模型（基于 GPU/CPU ）进行模型转换\n后，二者的精度数据对比。对应章节 4 GPU vs NPU （TensorFlow 离线推理） 、5 GPU vs\nNPU（ONNX离线推理） 和6 GPU/CPU vs NPU （Caffe离线推理） 。\n● Ascend NPU vs Ascend NPU （推理）：表示已完成 ATC工具转换的离线模型，由于 CANN软\n件版本迭代、模型版本迭代、模型优化、硬件升级或 ATC转换前开启或关闭了算子融合功能\n等情况，对前后两个版本的模型进行精度数据对比。对应章节 7 NPU vs NPU （离线推\n理）。CANN社区版\n精度调试工具用户指南 1 简介\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 1"
+    },
+    {
+      "page": 7,
+      "content": "图1-1 精度比对总体流程\nCANN社区版\n精度调试工具用户指南 1 简介\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 2"
+    },
+    {
+      "page": 8,
+      "content": "2 使用前准备\n使用约束\n须知\n数据dump功能会采集算子输入输出信息，由于可能存在客户敏感信息，请在开发和调\n测场景下使用该功能，生产上线后建议关闭数据 dump开关，避免被攻击者利用，造成\n安全风险。\n●精度调试工具推荐环境配置： CPU 8核2.6GHz，内存 16GB，低于该配置则工具执\n行迟缓。\n●本文中举例路径均需要确保运行用户具有读或读写权限。\n●出于安全性及权限最小化角度考虑，本工具不应使用 root等高权限账户，建议使\n用普通用户权限执行。\n●本工具依赖 CANN软件包，使用本工具前，请先安装 CANN软件包，并使用 source\n命令执行 CANN的set_env.sh 环境变量文件，为保证安全， source后请勿擅自修改\nset_env.sh 中涉及的环境变量。\n●使用本工具前请确保执行用户的 umask值大于等于 0027，否则可能会导致工具生\n成的精度数据文件和目录权限过大。\n●用户须自行保证使用最小权限原则，如给工具输入的文件要求 other用户不可写，\n在一些对安全要求更严格的功能场景下还需确保输入的文件 group用户不可写。\n●本工具为开发调测工具，不建议在生产环境使用。\n●单算子网络不支持精度比对。\n● Python 版本支持情况请参见《 CANN 软件安装 》。\n●精度比对支持的 dump数据类型：\n– FLOAT\n– FLOAT16\n– DT_INT8\n– DT_UINT8\n– DT_INT16\n– DT_UINT16CANN社区版\n精度调试工具用户指南 2 使用前准备\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 3"
+    },
+    {
+      "page": 9,
+      "content": "– DT_INT32\n– DT_INT64\n– DT_UINT32\n– DT_UINT64\n– DT_BOOL\n– DT_DOUBLE\n– DT_BFLOAT16\n说明\n若网络中存在 DT_BFLOAT16 数据类型，则需要使用 pip3 install bfloat16ext 安装依\n赖。\n环境准备\n安装配套版本的 CANN Toolkit 开发套件包和 ops算子包并配置 CANN环境变量，具体请\n参见《 CANN 软件安装 》。\nCANN提供进程级环境变量设置脚本，供用户在进程中引用，以自动完成环境变量设\n置。执行命令参考如下，以下示例均为 root或非root用户默认安装路径，请以实际安装\n路径为准。\n# 存在多个 python3版本时，以指定 python3.7.5 为例，请根据实际修改\nexport PATH=/usr/local/python3.7.5/bin:$PATH\nexport LD_LIBRARY_PATH=/usr/local/python3.7.5/lib:$LD_LIBRARY_PATHCANN社区版\n精度调试工具用户指南 2 使用前准备\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 4"
+    },
+    {
+      "page": 10,
+      "content": "3 GPU vs NPU （TensorFlow 1.15 训练/在线\n推理）\n3.1 总体说明\n3.2 准备GPU侧npy文件\n3.3 准备NPU侧dump数据和计算图文件\n3.4 比对操作和分析\n3.1 总体说明\n说明\n对于该场景需要排查 8 比对结果说明 。\nTensorFlow 1.15 训练/在线推理场景需准备的比对数据文件如下表所示。\n表3-1 TensorFlow 1.x 的比对数据文件要求\n文件 说明 获取方式\nTensorFlow 原始训练网络 npy文件 标杆数\n据3.2 准备GPU侧npy文件\n计算图文件（ *.txt） 计算图\n文件3.3 准备NPU侧dump数据和计\n算图文件\n通过AI处理器运行生成的训练网络\ndump数据文件待比对\n数据\n CANN社区版\n精度调试工具用户指南 3 GPU vs NPU （TensorFlow 1.15 训练/在线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 5"
+    },
+    {
+      "page": 11,
+      "content": "3.2 准备GPU侧npy文件\n使用前须知\n●在通过执行 TensorFlow 1.15 原始网络训练 /在线推理来获取 npy文件前，要求有一\n套完整、可执行的标准 TensorFlow 模型训练 /在线推理工程。\n●不论采用 Estimator 模式还是 session.run 模式，首先要把脚本中所有的随机全部关\n闭，包括但不限于对数据集的 shuffle，参数的随机初始化，以及某些算子的隐性\n随机初始化（比如 dense算子），确认用户脚本内所有参数均非随机初始化。\n生成npy文件\n利用TensorFlow 官方提供的 debug工具tfdbg生成npy文件。详细的操作方法如下：\n步骤1修改TensorFlow 训练/在线推理脚本，添加 debug选项设置。\n●如果采用 Estimator 模式，采用如下方式添加 tfdbg的hook。\na.新增from tensorflow.python  import debug as tf_debug 导入debug模\n块。\nb.在生成 EstimatorSpec 对象实例的位置（即构造网络结构代码位置），新增代\n码tf_debug.LocalCLIDebugHook() 。\n图3-1 Estimator 模式\n●如果采用 session.run 模式，采用如下方式在 run之前设置 tfdbg装饰器。\na.新增from tensorflow.python  import debug as tf_debug 导入debug模\n块。\nb.在session初始化结束后，新增 sess =\ntf_debug.LocalCLIDebugWrapperSession(sess, ui_type=\"readline\") 。CANN社区版\n精度调试工具用户指南 3 GPU vs NPU （TensorFlow 1.15 训练/在线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 6"
+    },
+    {
+      "page": 12,
+      "content": "图3-2 session.run 模式\n步骤2执行训练 /在线推理脚本。\n步骤3训练/在线推理任务停止后，命令行视图自动进入 tfdbg调试命令行交互模式，执行 run\n命令。\nFor more details, see help.\ntfdbg> run\nrun命令执行完成后，可以依次执行 lt命令查询已存储的张量，执行 pt命令查看已存储\n的张量内容，保存数据为 npy格式文件。具体操作请参见 收集npy文件。\n----结束\n收集npy文件\nrun命令执行完成后，需要收集 npy文件，但由于 tfdbg一次只能 dump一个tensor，为\n了自动收集所有 npy文件，具体执行操作如下：\n步骤1执行lt > gpu_dump 命令将所有 tensor的名称暂存到自定义名称的 gpu_dump 文件里。\n命令行中会有如下回显。\nWrote output to tensor_name\n步骤2重新开启一个命令行窗口，在新的命令行窗口进入 gpu_dump 文件所在目录（默认在\n训练/在线推理脚本所在目录），执行下述命令，用以生成在 tfdbg命令行执行的命\n令。\ntimestamp=$[$(date +%s%N)/1000] ; cat gpu_dump  | awk '{print \"pt\",$4,$4}' | awk '{gsub(\"/\", \"_\", \n$3);gsub(\":\", \".\", $3);print($1,$2,\"-n 0 -w \"$3\".\"\"'$timestamp'\"\".npy\")}'\n步骤3复制所有生成的存储 tensor的命令（所有以“ pt”开头的命令），回到 tfdbg命令行视\n图所在窗口，粘贴执行，即可存储所有 npy文件。存储路径为训练 /在线推理脚本所在\n目录。\nnpy文件默认是以 numpy.save() 形式存储的，上述命令会将“ /”与“ :”用下划线 _替\n换。CANN社区版\n精度调试工具用户指南 3 GPU vs NPU （TensorFlow 1.15 训练/在线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 7"
+    },
+    {
+      "page": 13,
+      "content": "说明\n如果命令行界面无法粘贴文件内容，可以在 tfdbg命令行中输入“ mouse off”指令关闭鼠标模式\n后再进行粘贴。\n步骤4检查生成的 npy文件命名是否符合 {op_name}.{output_index}.{timestamp} .npy格式，\n如图3-3所示。\n说明\n●如果因算子名较长，造成按命名规则生成的 npy文件名超过 255字符而产生文件名异常，这类\n算子不支持精度比对。\n●因tfdbg自身原因或运行环境原因，可能存在部分生成的 npy文件名不符合精度比对要求，请\n按命名规则手工重命名。如果不符合要求的 npy文件较多，请参见 10.8 生成npy文件名异常\n情况批量处理 重新生成 npy文件。\n图3-3 查询.npy文件\n----结束\n3.3 准备NPU侧dump数据和计算图文件\n使用前须知\n●需要完成训练 /在线推理网络的开发、编译和运行，确保拥有可执行的训练 /在线推\n理工程。\n●本节dump数据过程仅为参考示例，介绍基本操作，更多详细介绍请参见\n《TensorFlow 1.15 模型迁移 》。\n●每次迭代都会产生 dump数据，在训练数据集较大时，每次迭代产生的 dump数据\n量也会增大，建议控制迭代次数，一般仅执行一次迭代。同时对于大模型场景，\n通常dump数据量太大并且耗时长，可以通过 dump_data 开启算子统计功能，根\n据统计数据识别可能异常的算子后，再 dump可能异常的算子。\n●多卡环境下，由于训练 /在线推理脚本中，每张卡的进程启动时间存在差异，这会\n导致落盘时产生多个时间戳目录。\n●在容器内执行时，生成的数据保存在容器里。\n●如果训练 /在线推理网络包含了随机因子，请在执行生成 dump数据前去除。\n●确保代码在网络结构、算子、优化器的选择上，以及参数的初始化策略等方面与\nGPU上训练 /在线推理的代码完全一致，否则比对无意义。\n●不建议在同一个训练脚本中同时进行训练和验证，即不建议将 train和evaluate 放\n在同一个脚本中，否则会产生两组 dump数据，容易造成混淆。\n●目前仅支持 AI CPU、AI Core和HCCL算子进行 dump数据。CANN社区版\n精度调试工具用户指南 3 GPU vs NPU （TensorFlow 1.15 训练/在线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 8"
+    },
+    {
+      "page": 14,
+      "content": "dump参数配置\n修改训练 /在线推理脚本，开启 dump功能。在相应代码中，增加如下的加粗字体信\n息。\n● Estimator 模式：通过 NPURunConfig 中的dump_config 采集dump数据，在创建\nNPURunConfig 之前，实例化一个 DumpConfig 类进行 dump的配置（包括配置\ndump路径、 dump哪些迭代的数据、 dump算子的输入还是输出数据等）。\nfrom npu_bridge.npu_init import *\n# dump_path ：dump数据存放路径，该参数指定的目录需要在启动训练 /在线推理的环境上（容器或 Host\n侧）提前创建且确保安装时配置的运行用户具有读写权限\n# enable_dump ：是否开启 dump功能\n# dump_step ：指定采集哪些迭代的 dump数据\n# dump_mode ：dump模式，取值： input/output/all\ndump_config  = DumpConfig(enable_dump=True,  dump_path = \"/home/output\", dump_step=\"0|5|10\", \ndump_mode=\"all\")\nconfig  = NPURunConfig(\n  dump_config=dump_config,  \n  session_config=session_config\n  )\n● sess.run 模式：通过 session配置项 enable_dump 、dump_path 、dump_step 、\ndump_mode 配置dump参数。\nconfig  = tf.ConfigProto()\ncustom_op =  config.graph_options.rewrite_options.custom_optimizers.add()\ncustom_op.name =  \"NpuOptimizer\"\ncustom_op.parameter_map[\"use_off_line\"].b  = True\ncustom_op.parameter_map[\"enable_dump\"].b = True\ncustom_op.parameter_map[\"dump_path\"].s = tf.compat.as_bytes(\"/home/output\") \ncustom_op.parameter_map[\"dump_step\"].s = tf.compat.as_bytes(\"0|5|10\")\ncustom_op.parameter_map[\"dump_mode\"].s = tf.compat.as_bytes(\"all\") \ncustom_op.parameter_map[\"dump_layer\"].s = tf.compat.as_bytes(\"nodename1 nodename2 \nnodename3\")\nconfig.graph_options.rewrite_options.remapping  = RewriterConfig.OFF\nwith tf.Session(config=config)  as sess:\n  print(sess.run(cost))\n说明\nTensorFlow 模型训练 /在线推理过程中可能存在算子溢出的情况，此时若直接进行精度比对\n操作则会造成比对结果不准确，请参见 10.1 溢出算子数据采集与解析 采集溢出数据。\n获取dump数据文件和计算图文件\n步骤1执行训练 /在线推理脚本，生成 dump数据文件和计算图文件。\n开启dump数据采集功能后，脚本执行时会自动在当前执行目录下生成计算图的 dump\n文件（不含有权重等数据的基本版 dump，仅dump经过GE优化、编译后的图），后续\n开发者通过工具进行精度比对时，会依赖此计算图文件查找 dump数据文件。您也可以\n通过环境变量 DUMP_GRAPH_PATH 指定dump图文件存储路径，示例：\nexport DUMP_GRAPH_PATH=/home/dumpgraph\ndump数据文件生成在 {dump_path} 指定的目录下，即 {dump_path}/{time}/\n{device_id}/{model_name}/{model_id}/{data_index} 目录下，以 {dump_path} 配置/\nhome/output 为例，例如存放在“ /home/output/20200808163566/0/\nge_default_20200808163719_121/11/0 ”。CANN社区版\n精度调试工具用户指南 3 GPU vs NPU （TensorFlow 1.15 训练/在线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 9"
+    },
+    {
+      "page": 15,
+      "content": "表3-2 dump数据文件路径格式说明\n路径key 说明 备注\ndump_path dump数据存放路径（如果设置的\n是相对路径，则为拼接后的全路\n径）。-\ntime dump数据文件落盘的时间。 格式为：\nYYYYMMDDHHMMSS\ndevice_id 设备ID。 -\nmodel_na\nme子图名称。 model_name 层可能存在多个文\n件夹， dump数据取计算图名称\n对应目录下的数据。\n如果model_name 出现了\n“.”、“ /”、“ \\”以及空格\n时，转换为下划线表示。\nmodel_id 子图ID号。 --\ndata_index 迭代数，用于保存对应迭代的\ndump数据。如果指定了 dump_step ，则\ndata_index 和dump_step 一\n致；如果不指定 dump_step ，\n则data_index 序号从 0开始计\n数，每 dump一个迭代的数据，\n序号递增 1。\n \n步骤2选取计算图文件。\n●方法一：\n执行训练脚本完成后会在训练脚本当前目录生成 GE图文件，图文件可能会有多\n个。一般情况下，选取计算图文件方法：将 TensorFlow 模型保存为 pb文件，然后\n查看该模型，选取其中一个计算类算子的名字作为关键字，找包含该关键字的计\n算图文件。计算图名称取计算图文件 graph下的name字段值。\n●方法二：\n在所有以“ _Build.txt ”为结尾的 dump图文件中，查找“ Iterator”关键词。记录\n查找出的计算图文件名称，用于后续精度比对。\ngrep Iterator *_Build.txt\n如上图所示，“ ge_proto_00292_Build.txt ”即为需要的计算图文件。\n步骤3选取dump数据文件。CANN社区版\n精度调试工具用户指南 3 GPU vs NPU （TensorFlow 1.15 训练/在线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 10"
+    },
+    {
+      "page": 16,
+      "content": "1.打开步骤2中找到的计算图文件，记录第一个 graph中的name字段值。如下示例\n中，记录“ ge_default_20240613143502_1 ”。\ngraph {\n  name: \"ge_default_20240613143502_1\"\n  op {\n    name: \"atomic_addr_clean0_71\"\n    type: \"AtomicAddrClean\"\n    attr {\n      key: \"_fe_imply_type\"\n      value {\n        i: 6\n      }\n    }\n  }\n}\n2.进入以时间戳命名的 dump文件存放路径下，我们会看到该目录下存在几个文件\n夹：\n3.找到前面记录的名称为 name值的文件夹，例如 ge_default_20240613143502_1 ，\n这些文件即为需要的 dump数据文件。\ndump数据文件命名格式为： {op_type}.{op_name}.{task_id}.{stream_id}.\n{timestamp}\n对于如下产品，文件名还有可能为其他格式：\nAtlas A2 训练系列产品 /Atlas A2 推理系列产品\nAtlas A3 训练系列产品 /Atlas A3 推理系列产品\n–{op_type}.{op_name_lxsliceN}.({stream_id}.){task_id}.{timestamp}.\n{task_type}.{context_id}.{thread_id}.{device_id}\n–{op_type}.{op_name}.({stream_id}.){task_id}.{timestamp}.{task_type}.\n{context_id}.{thread_id}.{device_id}CANN社区版\n精度调试工具用户指南 3 GPU vs NPU （TensorFlow 1.15 训练/在线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 11"
+    },
+    {
+      "page": 17,
+      "content": "说明\n– dump 数据文件如果 op_type、op_name 出现了“ .”、“ /”、“ \\”、空格时，则会转\n换为下划线表示。\n–如果文件名称长度超过了 OS文件名称长度限制（一般是 255个字符），则会将该 dump\n文件重命名为一串随机数字，映射关系可查看同目录下的 mapping.csv 。\n–在图执行过程中，以下算子不会产生 dump数据：\n▪在图执行前，已明确不会在 Device侧执行的算子，如条件类算子 (if/while/for/\ncase等)、数据类算子 (Data/RefData/Const 等)、数据流算子 (StackPush/\nStackPop/Concat/Split 等)。\n▪在图优化阶段，被 GE标记为不在 Device侧执行的算子，这些算子在 dump图中的\nattr的_no_task 属性为 true。\n▪图中不会到达最终执行分支的算子。\n----结束\n3.4 比对操作和分析\n说明\n●本节中的计算图文件、目录等名称均为举例，请根据实际环境替换。其中， -out\n指定的结果存放路径，需确保操作用户具有读写权限。\n●如果执行过程中报“ MemoryError ”，则表示数据量过大导致了内存溢出，请将\nNPU的dump数据文件拆分到多个目录后，再逐一进行比对。\n●当指定的比对数据文件大小超过 1GB或.json文件大小超过 100MB时，比对过程可\n能耗时较长，系统提示： 'The size (%d) of %s more than the XX, it needs more\ntime to run.' 。\n前提条件\n请确保完成 2 使用前准备 。\n整网全算法维度比对并输出专家建议\n将网络模型中参与计算的所有算子进行精度比对。操作步骤如下：\n步骤1登录CANN工具安装环境。\n步骤2生成json格式的计算图文件。\natc --mode=5 --om= ge_proto_00005_Build.txt  --json= ge_proto_00005_Build.txt.json\n.txt格式计算图文件获取请参见 3.3 准备NPU侧dump数据和计算图文件 。\n步骤3进入${INSTALL_DIR}/tools/operator_cmp/compare ，${INSTALL_DIR} 请替换为 CANN\n软件安装后文件存储路径。以 root用户安装为例，安装后文件默认存储路径为： /usr/\nlocal/Ascend/cann 。\n步骤4执行比对命令。\n整网全算法维度比对样例 ：\npython3 msaccucmp.py compare -m $HOME/output/20200808163566/0/\nge_default_20200808163719_121/11/0  -g $HOME/output/Standard_tf/resnet50  -f $HOME/data/\nge_proto_00005_Build.txt.json  -out $HOME/result  -advisorCANN社区版\n精度调试工具用户指南 3 GPU vs NPU （TensorFlow 1.15 训练/在线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 12"
+    },
+    {
+      "page": 18,
+      "content": "说明\n●上述命令仅展示当前场景所需参数的示例，若需要配置更多参数，比如已知可能出现精度问\n题的范围或因大型网络模型输出结果文件数据量过大，通过配置参数来减少输出结果的数据\n量，请参见 11.2 命令格式说明 获取更多参数详细介绍。\n●需要安装 pandas 1.3 或更高版本依赖，否则无法执行 -advisor参数输出专家建议。\n表3-3 命令行参数说明\n参数名 参数说明 是\n否\n必\n选\n-m\n--my_dump_path基于AI处理器运行生成的训练 /在线推理网络 dump数据\n文件所在目录，须指定 dump数据文件所在的父目录。是\n-g\n--\ngolden_dump_pat\nh基于GPU运行生成的原始网络 npy文件所在目录，须指\n定npy文件所在的父目录。是\n-f\n--fusion_rule_file全网层信息文件。\n通过步骤2使用ATC转换计算图文件生成的 json文件。是\n-out\n--output比对数据结果存放路径，默认为当前路径。\n不建议配置与当前用户不一致的其它用户目录，避免提\n权风险。否\n-advisor 在Tensor比对结束后，针对比对结果进行数据分析，给\n出专家建议。详情请参见 9.2 比对结果专家建议否\n \n比对结果如 图3-4所示。\n图3-4 比对结果示例\n以上比对结果字段解释请参见 11.3 完整比对结果参数说明 。\n步骤5比对结果分析。\n请参见 9 比对结果分析 。对于比对结果中可能存在部分无法比对或异常情况（例如结\n果中的 NaN），请参见 8 比对结果说明 。\n----结束CANN社区版\n精度调试工具用户指南 3 GPU vs NPU （TensorFlow 1.15 训练/在线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 13"
+    },
+    {
+      "page": 19,
+      "content": "4 GPU vs NPU （TensorFlow 离线推理）\n4.1 总体说明\n4.2 准备TensorFlow 模型npy文件\n4.3 准备全网层信息文件\n4.4 比对操作和分析\n4.1 总体说明\n说明\n对于该场景需要排查 8 比对结果说明 。\nTensorFlow 场景仅支持非量化原始模型与非量化离线模型的精度比对。需准备的比对\n数据文件如下表所示。\n表4-1 非量化原始模型  vs 非量化离线模型的比对数据文件要求\n文件 说明 获取方式\n非量化原始模型的 npy文件 标杆数\n据4.2 准备TensorFlow 模型npy文\n件\n通过ATC转换离线模型文件生成的\njson文件获取算\n子的映\n射关系4.3 准备全网层信息文件\n非量化离线模型在 AI处理器上运行生\n成的dump数据文件待比对\n数据离线推理场景各框架获取 NPU环\n境的dump数据方法一致，请参\n考：\n7.3 准备离线模型 dump数据文\n件\n CANN社区版\n精度调试工具用户指南 4 GPU vs NPU （TensorFlow 离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 14"
+    },
+    {
+      "page": 20,
+      "content": "4.2 准备TensorFlow 模型npy文件\n本版本不提供 TensorFlow 模型numpy（.npy）数据生成功能，请自行安装 TensorFlow\n环境并提前准备 numpy数据。本文仅提供生成 numpy格式TensorFlow 原始数据\n“*.npy”文件的样例参考。\n在进行 TensorFlow 模型生成 npy文件前，要求有一套完整的、可执行的、标准的\nTensorFlow 模型应用工程。然后利用 TensorFlow 官方提供的 debug工具tfdbg调试程\n序，从而生成 npy文件。主要操作示例如下，请根据用户的应用工程适配操作。\n步骤1修改TensorFlow 推理脚本，添加 debug选项设置。代码中增加如下代码：\n● Estimator 模式：\nfrom tensorflow.python  import debug as tf_debug\ntraining_hooks = [train_helper.PrefillStagingAreaHook(),  tf_debug.LocalCLIDebugHook()]\n如图4-1所示，添加 tfdbg的hook。\n图4-1 Estimator 模式\n● session.run 模式：\nfrom tensorflow.python  import debug as tf_debug\nsess = tf_debug.LocalCLIDebugWrapperSession(sess, ui_type=\"readline\")\n如图4-2所示，在 run之前设置 tfdbg装饰器。CANN社区版\n精度调试工具用户指南 4 GPU vs NPU （TensorFlow 离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 15"
+    },
+    {
+      "page": 21,
+      "content": "图4-2 session.run 模式\n步骤2执行推理脚本。\n推理完成后自动进入 tfdbg调试命令行交互模式，执行 run命令。\n步骤3收集npy文件。\n执行run命令完成后，可以在新的命令行窗口通过 lt查询已存储的张量，通过 pt可以查\n看已存储的张量内容，可以保存数据为 numpy格式文件。\n因为tfdbg一次命令只能 dump一个tensor，为了自动生成收集所有数据，可以按以下\n几个步骤操作：\n1.执行lt > tensor_name 将所有 tensor的名称暂存到文件里。\n2.重新开启一个 linux命令窗口，在新的窗口中执行下述命令，用以生成在 tfdbg命令\n行执行的命令。\ntimestamp=$[$(date +%s%N)/1000] ; cat tensor_name  | awk '{print \"pt\",$4,$4}' | awk '{gsub(\"/\", \"_\", \n$3);gsub(\":\", \".\", $3);print($1,$2,\"-n 0 -w \"$3\".\"\"'$timestamp'\"\".npy\")}' > tensor_name_cmd.txt\n说明\n该示例生成符合精度比对需要的 npy文件名称格式，存储到 tensor_name_cmd.txt 文件。其\n中，tensor_name 为自定义 tensor列表对应的文件名， timestamp 为16位的时间戳。\n3.回到tfdbg命令行窗口，输入 run命令后，将上一步生成的所有 tensor存储的命令\n粘贴执行，即可存储所有 npy文件。\nnpy文件默认是以 numpy.save() 形式存储的，上述命令会将“ /”用下划线 _替换。\n说明\n如果命令行界面无法粘贴文件内容，可以在 tfdbg命令行中输入“ mouse off”指令关闭鼠\n标模式后再进行粘贴。\n4.检查生成的 npy文件命名是否符合 {op_name}.{output_index}.{timestamp} .npy格\n式，如图4-3所示。CANN社区版\n精度调试工具用户指南 4 GPU vs NPU （TensorFlow 离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 16"
+    },
+    {
+      "page": 22,
+      "content": "说明\n–如果因算子名较长，造成按命名规则生成的 npy文件名超过 255字符而产生文件名异\n常，这类算子不支持精度比对。\n–因tfdbg自身原因或运行环境原因，可能存在部分生成的 npy文件名不符合精度比对要\n求，请按命名规则手工重命名。如果不符合要求的 npy文件较多，请参见 10.8 生成npy\n文件名异常情况批量处理 重新生成 npy文件。\n图4-3 查询.npy文件\n----结束\n4.3 准备全网层信息文件\n以下介绍通过 ATC模型转换工具获取离线模型的操作步骤，更多操作请参见《 ATC离线\n模型编译工具 》。\n步骤1以运行用户登录 Ascend-cann-toolkit 所在环境。\n步骤2获取原始模型文件并保存在任意目录下。\n例如：$HOME/module/resnet50_tensorflow*.pb\n步骤3执行ATC模型转换。\natc --model= $HOME/module/resnet50_tensorflow*.pb  --framework= 3 --output= $HOME/module/out/\ntf_resnet50  --soc_version= <soc_version>\n若提示如下信息，则说明模型转换成功。\nATC run success\n成功执行命令后，在 --output 参数指定的路径下可查看离线模型（如：\ntf_resnet50.om ）。\n步骤4生成json文件。\natc --mode= 1 --om= $HOME/module/out/tf_resnet50.om   --json= $HOME/module/out/tf_resnet50.json\n若提示如下信息，则说明转换 json文件成功。\nATC run success\n成功执行命令后，在 --json参数指定的路径下可查看转换后的 json文件。\n----结束CANN社区版\n精度调试工具用户指南 4 GPU vs NPU （TensorFlow 离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 17"
+    },
+    {
+      "page": 23,
+      "content": "4.4 比对操作和分析\n说明\n●本节涉及的 .json文件、目录等名称均为举例，请根据实际环境替换。其中， -out\n指定的结果存放路径，需确保操作用户具有读写权限。\n●如果执行过程中报“ MemoryError ”，则表示数据量过大导致了内存溢出，请将\nNPU的dump数据文件拆分到多个目录后，再逐一进行比对。\n●当指定的比对数据文件大小超过 1GB或.json文件大小超过 100MB时，比对过程可\n能耗时较长，系统提示： 'The size (%d) of %s more than the XX, it needs more\ntime to run.' 。\n前提条件\n●请确保完成 2 使用前准备 。\n●根据4.1 总体说明 中的场景准备比对文件。\n操作步骤\n步骤1登录CANN工具安装环境。\n步骤2进入${INSTALL_DIR}/tools/operator_cmp/compare ，${INSTALL_DIR} 请替换为 CANN\n软件安装后文件存储路径。以 root用户安装为例，安装后文件默认存储路径为： /usr/\nlocal/Ascend/cann 。\n步骤3执行比对命令。\n说明\n由于dump和npy比对数据文件是由多个文件组成，故下文操作步骤中 -m和-g参数须指定数据文\n件所在的父目录。如： $HOME/MyApp/resnet50 ，其中resnet50 文件夹下直接保存比对数据文\n件。\n目录结构示例如下：\nroot@xxx:$HOME/MyApp/resnet50# tree\n.\n├── BatchMatMul.bert_encoder_layer_0_attention_self_MatMul_1.24.1614717261785536\n├── BatchMatMul.bert_encoder_layer_0_attention_self_MatMul.21.1614717261768864\n├── BatchMatMul.bert_encoder_layer_10_attention_self_MatMul_1.235.1614717263664916\n# 仅为示例，此处省略剩余文件名。\npython3 msaccucmp.py compare -m $HOME/MyApp/tf_resnet50/20230815201822/0/\nresnet50_tensorflow_1_7/1/0/  -g $HOME/MyApp/resnet50_tensorflow_1_dump/  -f $HOME/module/out/\ntf_resnet50/tf_resnet50.json  -out $HOME/result  -advisor\n说明\n●上述命令仅展示当前场景所需参数的示例，若需要配置更多参数，比如已知可能出现精度问\n题的范围或因大型网络模型输出结果文件数据量过大，通过配置参数来减少输出结果的数据\n量，请参见 11.2 命令格式说明 获取更多参数详细介绍。\n●需要安装 pandas 1.3 或更高版本依赖，否则无法执行 -advisor参数输出专家建议。CANN社区版\n精度调试工具用户指南 4 GPU vs NPU （TensorFlow 离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 18"
+    },
+    {
+      "page": 24,
+      "content": "表4-2 整网比对命令行参数说明\n参数名 参数说明 是否\n必选\n-m\n--\nmy_dump_pat\nh基于AI处理器运行生成的数据文件所在目录。 是\n-g\n--\ngolden_dump_\npath基于GPU运行生成的原始网络数据文件所在目录。 是\n-f\n--\nfusion_rule_fil\ne全网层信息文件。\n通过ATC转换.om模型文件生成的 .json文件，文件包含整\n网算子的映射关系，用于精度比对时算子匹配。否\n-out\n--output比对数据结果存放路径，默认为当前路径。\n不建议配置与当前用户不一致的其它用户目录，避免提权\n风险。否\n-advisor 在Tensor比对结束后，针对比对结果进行数据分析，给出\n专家建议。详情请参见 9.2 比对结果专家建议否\n \n比对结果如 图4-4所示。\n图4-4 比对结果示例\n以上比对结果字段解释请参见 11.3 完整比对结果参数说明 。\n步骤4比对结果分析。\n请参见 9 比对结果分析 。对于比对结果中可能存在部分无法比对或异常情况（例如结\n果中的 NaN），请参见 8 比对结果说明 。\n----结束CANN社区版\n精度调试工具用户指南 4 GPU vs NPU （TensorFlow 离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 19"
+    },
+    {
+      "page": 25,
+      "content": "5 GPU vs NPU （ONNX离线推理）\n5.1 总体说明\n5.2 准备ONNX模型npy文件\n5.3 准备全网层信息文件\n5.4 比对操作和分析\n5.1 总体说明\n说明\n对于该场景需要排查 8 比对结果说明 。\nONNX场景仅支持非量化的精度比对。需准备的比对数据文件如下表所示。\n表5-1 非量化原始模型  vs 非量化离线模型的比对数据文件要求\n文件 说明 获取方式\n非量化原始模型的 npy文件 标杆数\n据5.2 准备ONNX模型npy文件\n通过ATC转换离线模型文件生成的\njson文件获取算\n子的映\n射关系5.3 准备全网层信息文件\n非量化离线模型在 AI处理器上运行生\n成的dump数据文件待比对\n数据离线推理场景各框架获取 NPU环\n境的dump数据方法一致，请参\n考：\n7.3 准备离线模型 dump数据文\n件\n CANN社区版\n精度调试工具用户指南 5 GPU vs NPU （ONNX离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 20"
+    },
+    {
+      "page": 26,
+      "content": "5.2 准备ONNX模型npy文件\n前提条件\n●需要确保每个算子节点有名称，否则无法生成正确的文件名。没有名称的算子节\n点需要先生成名称。\n●本参考示例以每个节点只有一个输出为例，多个输出的需要在文件名生成处适配\noutput_index 的获取。\n代码参考示例\n本版本不提供 ONNX模型npy文件生成功能，请自行安装 ONNX环境并提前准备 ONNX\n原始数据 npy文件。本文提供的样例代码仅作参考。\n为输出符合精度比对要求的 npy文件，需在推理结束后的代码中增加 dump操作，示例\n代码如下：\nimport os\nimport onnx\nimport onnxruntime\nimport numpy as np\nimport time\nfrom skl2onnx.helpers.onnx_helper import enumerate_model_node_outputs\nfrom skl2onnx.helpers.onnx_helper import select_model_inputs_outputs\nfrom skl2onnx.helpers.onnx_helper import save_onnx_model\n# 修改模型，增加输出节点\nmodel_onnx = onnx.load(\"./resnet50.onnx\")\noutput = []\nfor out in enumerate_model_node_outputs(model_onnx):\n    output.append(out)\nnum_onnx = select_model_inputs_outputs(model_onnx,outputs=output)\nsave_onnx_model(num_onnx, \"resnet50_dump.onnx\")\n# 推理得到输出，本示例中采用随机数作为输入\ninput_data = np.random.random((1,3,224,224)).astype(np.float32)\ninput_data.tofile(\"test_data.bin\")\nsess = onnxruntime.InferenceSession(\"resnet50_dump.onnx\")\ninput_name = sess.get_inputs()[0].name\noutput_name = [node.name for node in sess.get_outputs()]\nres = sess.run(output_name, {input_name: input_data})\n# 获得输出名称，确保每个算子节点有对应名称\nnode_name = [node.name for node in model_onnx.graph.node]\n# 保存数据\nnode_output_num = [len(node.output) for node in model_onnx.graph.node]\nidx = 0\nfor num, name in zip(node_output_num, node_name):\n    for i in range(num):\n        data = res[idx] \n        file_name  = name + \".\" + str(i) + \".\" + str(round(time.time() * 1000000)) + \".npy\"\n        output_dump_path = os.path.join(\"./onnx_dump/\", file_name)\n        np.save(output_dump_path, data.astype(np.float16))\n        idx += 1CANN社区版\n精度调试工具用户指南 5 GPU vs NPU （ONNX离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 21"
+    },
+    {
+      "page": 27,
+      "content": "说明\n●需要根据代码中的 output_dump_path 参数在当前目录新建对应“ onnx_dump ”目录或自定\n义目录。\n● npy文件命名格式为 {op_name}.{output_index}.{timestamp} .npy，其中需要确保文件名中的\n{output_index} 字段存在值为 0，否则无比对结果，原因是精度比对时默认从第一个\noutput_index 为0的数据开始。\n5.3 准备全网层信息文件\n以下介绍通过 ATC模型转换工具获取离线模型的操作步骤，更多操作请参见《 ATC离线\n模型编译工具 》。\n步骤1以运行用户登录 Ascend-cann-toolkit 所在环境。\n步骤2获取原始模型文件并保存在任意目录下。\n例如： resnet50*.onnx\n步骤3执行ATC模型转换。\natc --model= $HOME/module/resnet50*.onnx  --framework= 5 --output= $HOME/module/out/onnx_resnet50  \n--soc_version= <soc_version>\n若提示如下信息，则说明模型转换成功。\nATC run success\n成功执行命令后，在 --output 参数指定的路径下，可查看离线模型（如：\nonnx_resnet50.om ）。\n步骤4生成json文件。\natc --mode= 1 --om= $HOME/module/out/onnx_resnet50.om  --json= $HOME/module/out/onnx_resnet50.json\n若提示如下信息，则说明转换 json文件成功。\nATC run success\n成功执行命令后，在 --json参数指定的路径下可查看转换后的 json文件。\n----结束\n5.4 比对操作和分析\n说明\n●本节涉及的 .json文件、目录等名称均为举例，请根据实际环境替换。其中， -out\n指定的结果存放路径，需确保操作用户具有读写权限。\n●如果执行过程中报“ MemoryError ”，则表示数据量过大导致了内存溢出，请将\nNPU的dump数据文件拆分到多个目录后，再逐一进行比对。\n●当指定的比对数据文件大小超过 1GB或.json文件大小超过 100MB时，比对过程可\n能耗时较长，系统提示： 'The size (%d) of %s more than the XX, it needs more\ntime to run.' 。\n前提条件\n●请确保完成 2 使用前准备 。CANN社区版\n精度调试工具用户指南 5 GPU vs NPU （ONNX离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 22"
+    },
+    {
+      "page": 28,
+      "content": "●根据5.1 总体说明 中的场景准备比对文件。\n操作步骤\n本节以非量化 AI处理器运行生成的 dump数据与非量化 ONNX模型npy文件比对为例进\n行介绍，下文中参数说明均以该示例介绍，请根据您的实际情况进行替换。\n步骤1登录Ascend-cann-toolkit 环境。\n步骤2进入${INSTALL_DIR}/tools/operator_cmp/compare ，${INSTALL_DIR} 请替换为 CANN\n软件安装后文件存储路径。以 root用户安装为例，安装后文件默认存储路径为： /usr/\nlocal/Ascend/cann 。\n步骤3执行比对命令。\n说明\n由于dump和npy比对数据文件是由多个文件组成，故下文操作步骤中 -m和-g参数须指定数据文\n件所在的父目录。如： $HOME/MyApp/resnet50 ，其中resnet50 文件夹下直接保存比对数据文\n件。\n目录结构示例如下：\nroot@xxx:$HOME/MyApp/resnet50# tree\n.\n├── BatchMatMul.bert_encoder_layer_0_attention_self_MatMul_1.24.1614717261785536\n├── BatchMatMul.bert_encoder_layer_0_attention_self_MatMul.21.1614717261768864\n├── BatchMatMul.bert_encoder_layer_10_attention_self_MatMul_1.235.1614717263664916\n# 仅为示例，此处省略剩余文件名。\npython3 msaccucmp.py compare -m $HOME/MyApp/npu_dump/20230216155330/0/resnet50/1/0/  -g \n$HOME/MyApp/onnx_dump/  -f $HOME/module/out/onnx_resnet50.json  -out $HOME/result  -advisor\n说明\n●上述命令仅展示当前场景所需参数的示例，若需要配置更多参数，比如已知可能出现精度问\n题的范围或因大型网络模型输出结果文件数据量过大，通过配置参数来减少输出结果的数据\n量，请参见 11.2 命令格式说明 获取更多参数详细介绍。\n●需要安装 pandas 1.3 或更高版本依赖，否则无法执行 -advisor参数输出专家建议。\n表5-2 整网比对命令行参数说明\n参数名 参数说明 是否\n必选\n-m\n--\nmy_dump_pat\nh基于AI处理器运行生成的数据文件所在目录。 是\n-g\n--\ngolden_dump_\npath基于GPU运行生成的原始网络数据文件所在目录。 是CANN社区版\n精度调试工具用户指南 5 GPU vs NPU （ONNX离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 23"
+    },
+    {
+      "page": 29,
+      "content": "参数名 参数说明 是否\n必选\n-f\n--\nfusion_rule_fil\ne全网层信息文件。\n通过ATC转换.om模型文件生成的 .json文件，文件包含整\n网算子的映射关系，用于精度比对时算子匹配。否\n-out\n--output比对数据结果存放路径，默认为当前路径。\n不建议配置与当前用户不一致的其它用户目录，避免提权\n风险。否\n-advisor 在Tensor比对结束后，针对比对结果进行数据分析，给出\n专家建议。详情请参见 9.2 比对结果专家建议否\n \n比对结果如 图5-1所示。\n图5-1 比对结果示例\n以上比对结果字段解释请参见 11.3 完整比对结果参数说明 。\n步骤4比对结果分析。\n请参见 9 比对结果分析 。对于比对结果中可能存在部分无法比对或异常情况（例如结\n果中的 NaN），请参见 8 比对结果说明 。\n----结束CANN社区版\n精度调试工具用户指南 5 GPU vs NPU （ONNX离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 24"
+    },
+    {
+      "page": 30,
+      "content": "6 GPU/CPU vs NPU （Caffe离线推理）\n6.1 总体说明\n6.2 Caffe模型npy文件准备\n6.3 准备模型文件和量化信息文件\n6.4 比对操作和分析\n6.1 总体说明\n说明\n对于该场景需要排查 8 比对结果说明 。\nCaffe场景支持量化、非量化的精度比对。\n●非量化场景下 ，需准备下表中的比对数据文件：\n表6-1 非量化原始模型  vs 非量化离线模型的比对数据文件要求\n文件 说明 获取方式\n非量化原始模型的 npy文件 标杆数\n据6.2 Caffe模型npy文件准备\n通过ATC转换离线模型文件生成的\njson文件获取算\n子的映\n射关系全网层信息文件\n非量化离线模型在 AI处理器上运行\n生成的 dump数据文件待比对\n数据离线推理场景各框架获取 NPU\n环境的 dump数据方法一致，请\n参考：\n7.3 准备离线模型 dump数据文\n件\n \n●量化场景下 ，若需要详细分析量化过程和模型转换阶段的精度问题，可按如下步\n骤比对：CANN社区版\n精度调试工具用户指南 6 GPU/CPU vs NPU （Caffe离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 25"
+    },
+    {
+      "page": 31,
+      "content": "说明\n●量化是指对模型的权重（ weight）和数据（ activation ）进行低比特处理，让最终生成\n的网络模型更加轻量化，从而达到节省网络模型存储空间、降低传输时延、提高计算效\n率，达到性能提升与优化的目标。详情请参见《 AMCT模型压缩工具 》。\n● AMCT 对原始框架模型进行量化时，会插入量化和反量化算子，而使用 ATC工具进行模\n型转换过程中，会对插入的量化和反量化算子进行融合，此情况下进行量化后模型\ndump结果与原始模型 dump结果的比对可能不准确。因此如果用户想使用通过 AMCT量\n化后的模型进行精度比对，则需要通过 --fusion_switch_file 参数关闭部分算子融合功\n能，并在精度比对后进行 7 NPU vs NPU （离线推理） ，判断融合前后是否存在精度差\n异。\nCaffe的离线推理场景，为了提升性能进行了模型量化，但模型量化后可能存在精\n度下降的问题。为了提升性能，一定的精度下降是可以接受的，一般一个模型精\n度下降在 1%范围内，但如果误差较大，那么就需要定位原因。引起精度误差较大\n的原因主要有：\n–量化过程导致精度下降。\n–量化原始模型，经过 ATC转换成的量化离线模型在 NPU上运行，算子的变化\n导致精度问题。\n根据以上原因，那么要分步骤定位精度问题：\na.定位量化阶段的精度问题。\n执行非量化原始模型（ GPU/CPU ） vs 量化原始模型（ GPU/CPU ）。\ni.参见6.2 Caffe模型npy文件准备 获取非量化原始模型 resnet50.prototxt\n和resnet50.caffemodel 的dump数据文件。\nii.参见量化原始模型和量化信息文件 ，获取量化原始模型文件\nresnet50_deploy_model.prototxt 和\nresnet50_deploy_weights.caffemodel 、\nresnet50_fake_quant_model.prototxt 和\nresnet50_fake_quant_weights.caffemodel 以及量化信息文件\nresnet50_quant.json 。\niii.参见6.2 Caffe模型npy文件准备 获取量化原始模型\nresnet50_fake_quant_model.prototxt 和\nresnet50_fake_quant_weights.caffemodel 的dump数据文件。\niv.参见6.4 比对操作和分析 执行非量化原始模型与量化原始模型的精度比\n对操作。\nv.完成精度比对后首先确认量化模型精度误差多少。一般通过模型的批量\n数据的 TopN的精度确认，例如 1万~10万张图片的精度误差情况，如果在\n1%，基本上合理，无须定位，如果超过 1%甚至达到 3%，那么量化导致\n的精度问题不可忽略。\nvi.检测量化流程设计是否合理。例如选取的量化数据集是否具有代表性，\n是业务需要的数据集，数据量是否过少，一般 10~100之间为正常。\nvii.若量化阶段精度误差较大，建议对模型首、尾 2层进行手动去量化，一般\n可提升一部分精度。\nb.定位模型转换阶段产生的精度问题，即量化离线模型在 NPU上运行时的精度\n问题。\n执行量化原始模型（ GPU/CPU ） vs 量化离线模型（关闭算子融合功能）\n（NPU）。\n由于ATC工具的模型转换操作默认开启了算子融合功能，故为了排除融合后\n算子无法直接进行精度比对的因素，模型转换先关闭算子融合功能。CANN社区版\n精度调试工具用户指南 6 GPU/CPU vs NPU （Caffe离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 26"
+    },
+    {
+      "page": 32,
+      "content": "i.通过关闭算子融合功能执行 ATC模型转换获取量化离线模型（关闭算子\n融合功能）。\natc --model= $HOME/module/resnet50_deploy_model.prototxt  --weight= $HOME/module/\nresnet50_deploy_weights.caffemodel  --framework= 0 --output= $HOME/module/out/\ncaffe_resnet50_off  --soc_version= <soc_version>   --fusion_switch_file= $HOME/module/\nfusion_switch.cfg\n说明\n关闭算子融合功能需要通过 --fusion_switch_file 参数指定算子融合规则配置文件\n（如fusion_switch.cfg ），并在配置文件中关闭算子融合功能。融合规则配置文\n件关闭配置如下：\n{\n    \"Switch\":{\n        \"GraphFusion\":{\n            \"ALL\":\"off\"\n        },\n        \"UBFusion\":{\n            \"ALL\":\"off\"\n         }\n    }\n}\n详细参数解释请参见《 ATC离线模型编译工具 》\n若提示如下信息，则说明模型转换成功。\nATC run success\n成功执行命令后，在 $HOME/module/out/caffe_resnet50_off 目录下生\n成离线模型（如： caffe_resnet50.om ）。\nii.生成json文件。\natc --mode= 1 --om=$HOME/module/out/caffe_resnet50_off/caffe_resnet50.om  --json=\n$HOME/data/resnet50.json\niii.参见7.3 准备离线模型 dump数据文件 获取量化离线模型\ncaffe_resnet50.om （关闭算子融合功能）的 dump数据文件。\niv.参见6.4 比对操作和分析 执行量化原始模型与量化离线模型（关闭算子\n融合功能）的精度比对操作。\nv.若模型转换阶段精度误差较大，根据比对结果判断是累计误差，还是某\n个节点误差较大，如果是某一阶段误差较大，您可以获取日志后单击\nLink联系技术支持。规避方法：建议对该节点手动去量化，重新进行模\n型量化。如果是累计误差，可以检查是否为量化阶段的误差，由于量化\n本身存在精度损失，所以如果是量化产生的精度误差，那么可能有大量\n算子均存在较小的精度误差，可以通过调整量化配置重复量化，直至满\n足精度要求。\nvi.特殊数据：由于余弦相似度不能完全衡量精度，所以在如上方法还不能\n解决的情况，可以进行 9.5 单算子比对 。\nc.（可选）参见 7 NPU vs NPU （离线推理） 的“开启和关闭算子融合功能模\n型转换的精度比对”场景执行量化离线模型（默认开启算子融合功能）与量\n化离线模型（关闭算子融合功能）的精度比对操作。\n●量化场景下 ，若只需要初步判断非量化原始模型（ GPU/CPU ）到量化离线模型\n（NPU）的精度问题，按照下表准备比对数据文件：\n表6-2 非量化原始模型  vs 量化离线模型的比对数据文件要求\n文件 说明 获取方式\n非量化原始模型的 npy文件 标杆数\n据6.2 Caffe模型npy文件准备CANN社区版\n精度调试工具用户指南 6 GPU/CPU vs NPU （Caffe离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 27"
+    },
+    {
+      "page": 33,
+      "content": "文件 说明 获取方式\n●通过ATC转换离线模型文件生成\n的json文件\n● AMCT 后的量化信息文件\n（*.json）\n二选一获取算\n子的映\n射关系6.3 准备模型文件和量化信息\n文件\n量化离线模型在 AI处理器上运行生\n成的dump数据文件待比对\n数据7.3 准备离线模型 dump数据文\n件\n \n6.2 Caffe模型npy文件准备\n前提条件\n●针对量化原始模型获取 npy文件，请先参见 量化原始模型和量化信息文件 获取量化\n原始模型。\n●为确保生成符合命名要求的 .npy文件，需要对原始的 Caffe模型文件去除 in-\nplace，生成新的 .prototxt 模型文件用于生成 .npy文件（例如：如果有未去除 in-\nplace的A、B、C、D四个融合算子，进行 dump数据，输出的结果为 D算子的结\n果，但命名却是 A算子开头，就会导致比对时找不到文件）。针对量化场景，需要\n先在环境上安装 AMCT再执行去除 in-place命令， AMCT安装方法请参见《 AMCT\n模型压缩工具 》中的“工具安装”。\n进入/home/xxx/Ascend/cann/tools/operator_cmp/compare 目录，执行命令去除\nin-place，命令行举例如下：\npython3 inplace_layer_process.py -i /home/user/resnet50.prototxt\n执行命令后，在 /home/user 目录下生成去除 in-place的new_resnet50.prototxt 文\n件。\n●针对量化场景：为确保精度误差，需要保证执行 Caffe模型推理时的预处理数据与\nCaffe  AMCT时的预处理数据一致。\n生成npy文件\n本版本不提供 Caffe模型numpy数据生成功能，请自行安装 Caffe环境并提前准备 Caffe\n原始数据“ *.npy”文件。本文仅提供生成符合精度比对要求的 numpy格式Caffe原始数\n据“*.npy”文件的样例参考。\n说明\n如何准备原始 Caffe模型npy文件，您可以参见论坛发帖 算子精度比对工具标杆数据生成环境搭\n建指导（ Caffe  + TensorFlow ）或者自行获取其他方法。该帖仅供参考。\n为输出符合精度比对要求的“ *.npy”文件，需在推理结束后的代码中增加 dump操\n作，示例代码如下：\n    # 读取prototxt文件\n    net_param = caffe_pb2.NetParameter()\n    with open(self.model_file_path,  'rb') as model_file:\n        google.protobuf.text_format.Parse(model_file.read(),  net_param)\n        # 保存数据为 numpy文件CANN社区版\n精度调试工具用户指南 6 GPU/CPU vs NPU （Caffe离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 28"
+    },
+    {
+      "page": 34,
+      "content": "        for layer in net_param.layer:\n            name = layer.name.replace(\"/\", \"_\").replace(\".\", \"_\")\n            index = 0\n            for top in layer.top:\n                data = net.blobs[top].data[...]\n                file_name  = name + \".\" + str(index) + \".\" + str(\n                    round(time.time() * 1000000)) + \".npy\"\n                output_dump_path = os.path.join(self.output_path, file_name)\n                np.save(output_dump_path, data)\n                print('The dump data of \"' + layer.name\n                      + '\" has been saved to \"' + output_dump_path + '\".')\n                index += 1\n增加上述代码后，运行 Caffe模型的应用工程，即可生成符合要求的 npy文件。\n说明\n●需要根据代码中的 output_dump_path 参数在当前目录新建对应“ onnx_dump ”目录或自定\n义目录。\n● npy文件命名格式为 {op_name}.{output_index}.{timestamp} .npy，其中需要确保文件名中的\n{output_index} 字段存在值为 0，否则无比对结果，原因是精度比对时默认从第一个\noutput_index 为0的数据开始。\n6.3 准备模型文件和量化信息文件\n全网层信息文件\n以下介绍通过 ATC模型转换工具获取离线模型的操作步骤，更多操作请参见《 ATC离线\n模型编译工具 》。\n步骤1以运行用户登录 Ascend-cann-toolkit 所在环境。\n步骤2获取原始模型文件并保存在任意目录下。\n例如： resnet50.prototxt 和resnet50.caffemodel\n步骤3执行ATC模型转换。\natc --model= $HOME/module/resnet50.prototxt  --weight= $HOME/module/resnet50.caffemodel  --\nframework= 0 --output= $HOME/module/out/caffe_resnet50  --soc_version= <soc_version>  \n若提示如下信息，则说明模型转换成功。\nATC run success\n成功执行命令后，在 --output 参数指定的路径下，可查看离线模型（如：\nresnet50.om ）。\n步骤4生成json文件。\natc --mode= 1 --om=$HOME/module/out/caffe_resnet50/resnet50.om  --json= $HOME/data/resnet50.json\n若提示如下信息，则说明转换 json文件成功。\nATC run success\n成功执行命令后，在 --json参数指定的路径下可查看转换后的 json文件。\n----结束\n量化原始模型和量化信息文件\n请参见《 AMCT模型压缩工具 》中的“快速入门”获取量化原始模型和量化信息文\n件。CANN社区版\n精度调试工具用户指南 6 GPU/CPU vs NPU （Caffe离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 29"
+    },
+    {
+      "page": 35,
+      "content": "生成量化原始模型和量化信息文件说明如下：\n● resnet50_quant.json ：量化信息文件，记录了量化模型同原始模型节点的映射关\n系，用于量化后模型同原始模型精度比对使用。\n● resnet50_deploy_model.prototxt ：量化后的可在 AI处理器部署的模型文件。\n●resnet50_deploy_weights.caffemodel ：量化后的可在 AI处理器部署的权重文件。\n● resnet50_fake_quant_model.prototxt ：量化后的可在 Caffe环境进行精度仿真模\n型文件。\n●resnet50_fake_quant_weights.caffemodel ：量化后的可在 Caffe环境进行精度仿\n真权重文件。\n说明\nresnet50_deploy_model.prototxt 和resnet50_deploy_weights.caffemodel 文件可用于进行 ATC\n模型转换， resnet50_fake_quant_model.prototxt 和resnet50_fake_quant_weights.caffemodel\n可用于进行 Caffe量化原始模型的 dump操作。\n量化离线模型文件\n对量化原始模型文件 resnet50_deploy_model.prototxt 和\nresnet50_deploy_weights.caffemodel 执行ATC模型转换，即可获取到量化离线模型文\n件和量化离线模型文件转换的 json文件。\n其中，量化原始模型文件从 量化原始模型和量化信息文件 操作中获取， ATC模型转换\n可参照全网层信息文件 中的操作。\n6.4 比对操作和分析\n说明\n●本节涉及的 .json文件、目录等名称均为举例，请根据实际环境替换。其中， -out\n指定的结果存放路径，需确保操作用户具有读写权限。\n●如果执行过程中报“ MemoryError ”，则表示数据量过大导致了内存溢出，请将\nNPU的dump数据文件拆分到多个目录后，再逐一进行比对。\n●当指定的比对数据文件大小超过 1GB或.json文件大小超过 100MB时，比对过程可\n能耗时较长，系统提示： 'The size (%d) of %s more than the XX, it needs more\ntime to run.' 。\n●使用量化离线模型在 AI处理器上运行生成的 dump数据作为待比对数据时，由于量\n化与反量化算子之间存在影响精度的中间算子，在比对时会与源数据产生较大的\n精度损失，所以精度比对时会过滤掉中间算子进行比对，此时输出的结果将不包\n含整网的所有算子。\n前提条件\n●请确保完成 2 使用前准备 。\n●根据6.1 总体说明 中的场景准备比对文件。\n操作步骤\n步骤1登录CANN工具安装环境。CANN社区版\n精度调试工具用户指南 6 GPU/CPU vs NPU （Caffe离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 30"
+    },
+    {
+      "page": 36,
+      "content": "步骤2进入${INSTALL_DIR}/tools/operator_cmp/compare ，${INSTALL_DIR} 请替换为 CANN\n软件安装后文件存储路径。以 root用户安装为例，安装后文件默认存储路径为： /usr/\nlocal/Ascend/cann 。\n步骤3执行比对命令。\n说明\n由于dump和npy比对数据文件是由多个文件组成，故下文操作步骤中 -m和-g参数须指定数据文\n件所在的父目录。如： $HOME/MyApp/resnet50 ，其中resnet50 文件夹下直接保存比对数据文\n件。\n目录结构示例如下：\nroot@xxx:$HOME/MyApp/resnet50# tree\n.\n├── BatchMatMul.bert_encoder_layer_0_attention_self_MatMul_1.24.1614717261785536\n├── BatchMatMul.bert_encoder_layer_0_attention_self_MatMul.21.1614717261768864\n├── BatchMatMul.bert_encoder_layer_10_attention_self_MatMul_1.235.1614717263664916\n# 仅为示例，此处省略剩余文件名。\n●非量化原始模型  vs 非量化离线模型、非量化原始模型  vs 量化离线模型、量化原\n始模型  vs 量化离线模型\npython3 msaccucmp.py compare -m $HOME/MyApp_mind/resnet50  -g $HOME/Standard_caffe/\nresnet50  -f $HOME/data/resnet50.json  -out $HOME/result  -advisor\n●非量化原始模型  vs 量化原始模型\npython3 msaccucmp.py compare -m $HOME/MyApp_mind/resnet50  -g $HOME/Standard_caffe/\nresnet50  -q $HOME/data/resnet50_quant.json  -out $HOME/result  -advisor\n说明\n●上述命令仅展示当前场景所需参数的示例，若需要配置更多参数，比如已知可能出现精度问\n题的范围或因大型网络模型输出结果文件数据量过大，通过配置参数来减少输出结果的数据\n量，请参见 11.2 命令格式说明 获取更多参数详细介绍。\n●需要安装 pandas 1.3 或更高版本依赖，否则无法执行 -advisor参数输出专家建议。\n表6-3 整网比对命令行参数说明\n参数名 参数说明 是否\n必选\n-m\n--\nmy_dump_pat\nh基于AI处理器运行生成的数据文件所在目录。 是\n-g\n--\ngolden_dump_\npath基于GPU/CPU 运行生成的原始网络数据文件所在目录。 是\n-f\n--\nfusion_rule_fil\ne全网层信息文件。\n通过ATC转换.om模型文件生成的 .json文件，文件包含整\n网算子的映射关系，用于精度比对时算子匹配。\nCaffe非量化原始模型  vs 量化离线模型场景时，与 -q参数\n二选一；Caffe非量化原始模型  vs 量化原始模型场景时，\n仅使用 -q参数。否CANN社区版\n精度调试工具用户指南 6 GPU/CPU vs NPU （Caffe离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 31"
+    },
+    {
+      "page": 37,
+      "content": "参数名 参数说明 是否\n必选\n-q\n--\nquant_fusion_\nrule_file量化信息文件。\n通过AMCT量化生成的量化信息文件（ *.json），文件包含\n整网量化算子映射关系，用于精度比对时算子匹配。\nCaffe非量化原始模型  vs 量化离线模型场景时，与 -f参数\n二选一；Caffe非量化原始模型  vs 量化原始模型场景时，\n仅使用本参数。否\n-out\n--output比对数据结果存放路径，默认为当前路径。\n不建议配置与当前用户不一致的其它用户目录，避免提权\n风险。否\n-advisor 在Tensor比对结束后，针对比对结果进行数据分析，给出\n专家建议。详情请参见 9.2 比对结果专家建议否\n \n比对结果如 图6-1所示。\n图6-1 比对结果示例\n以上比对结果字段解释请参见 11.3 完整比对结果参数说明 。\n步骤4比对结果分析。\n请参见 9 比对结果分析 。对于比对结果中可能存在部分无法比对或异常情况（例如结\n果中的 NaN），请参见 8 比对结果说明 。\n----结束CANN社区版\n精度调试工具用户指南 6 GPU/CPU vs NPU （Caffe离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 32"
+    },
+    {
+      "page": 38,
+      "content": "7 NPU vs NPU （离线推理）\n7.1 总体说明\n7.2 准备离线模型文件\n7.3 准备离线模型 dump数据文件\n7.4 比对操作和分析\n7.1 总体说明\n说明\n●对于该场景需要排查 8 比对结果说明 。\n●本场景仅针对相同芯片之间的比对。\n● NPU vs NPU 场景仅支持非量化离线模型  vs 非量化离线模型和量化离线模型  vs 量化离线模\n型场景的精度比对。\n本场景主要包括以下子场景：\n●版本迭代前后精度比对 ：用于判断 CANN软件版本迭代、模型版本迭代或模型优\n化前后，模型是否存在精度问题，进行前后两份精度数据的比对。\n●开启和关闭算子融合功能模型转换的精度比对 ：一般情况下，通过 ATC工具转换\n离线模型时，会默认开启算子融合功能。为了判断融合前后的算子精度差异，进\n行融合前后两份精度数据的比对。\n版本迭代前后精度比对\n对于进行 ATC转换后的离线模型，由于 CANN软件版本迭代、模型版本迭代或模型进行\n优化，需要判断迭代、优化后的模型在 AI处理器上运行是否存在精度下降问题。分为\n非量化  vs 非量化和量化  vs 量化，比对数据文件准备如下。CANN社区版\n精度调试工具用户指南 7 NPU vs NPU （离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 33"
+    },
+    {
+      "page": 39,
+      "content": "表7-1 非量化  vs 非量化的比对数据文件要求\n文件 说明 获取方式\n非量化离线模型在 AI处理器上运行生\n成的dump数据文件（版本迭代前）标杆数\n据离线推理场景各框架获取 NPU环\n境的dump数据方法一致，请参\n考：\n7.3 准备离线模型 dump数据文\n件非量化离线模型在 AI处理器上运行生\n成的dump数据文件（版本迭代后）待比对\n数据\n \n表7-2 量化 vs 量化的比对数据文件要求\n文件 说明 获取方式\n量化离线模型在 AI处理器上运行生成\n的dump数据文件（版本迭代前）标杆数\n据离线推理场景各框架获取 NPU环\n境的dump数据方法一致，请参\n考：\n7.3 准备离线模型 dump数据文\n件量化离线模型在 AI处理器上运行生成\n的dump数据文件（版本迭代后）待比对\n数据\n \n开启和关闭算子融合功能模型转换的精度比对\n一般情况下，通过 ATC工具转换离线模型时，会默认开启算子融合功能。那么需要判\n断融合前后的算子精度差异，就需要获取：\n●开启算子融合功能进行 ATC转换离线模型，并以转换后的离线模型进行精度数据\ndump。\n●关闭算子融合功能进行 ATC转换离线模型，并以转换后的离线模型进行精度数据\ndump。\n最后将以上两份数据进行精度比对。\n该场景分为非量化开融合  vs 非量化关融合和量化开融合  vs 量化关融合，比对数据文\n件准备如下。\n表7-3 非量化开融合  vs 非量化关融合的比对数据文件要求\n文件 说明 获取方式\n非量化离线模型文件（ *.om）（关闭\n算子融合功能）\n非量化离线模型文件（ *.om）（开启\n算子融合功能）模型文\n件7.2 准备离线模型文件\n非量化离线模型在 AI处理器上运行生\n成的dump数据文件（关闭算子融合\n功能）标杆数\n据离线推理场景各框架获取 NPU环\n境的dump数据方法一致，请参\n考：\n7.3 准备离线模型 dump数据文\n件CANN社区版\n精度调试工具用户指南 7 NPU vs NPU （离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 34"
+    },
+    {
+      "page": 40,
+      "content": "文件 说明 获取方式\n非量化离线模型在 AI处理器上运行生\n成的dump数据文件（开启算子融合\n功能）待比对\n数据\n \n表7-4 量化开融合  vs 量化关融合的比对数据文件要求\n文件 说明 获取方式\n量化离线模型文件（ *.om）（关闭算\n子融合功能）\n量化离线模型文件（ *.om）（开启算\n子融合功能）模型文\n件7.2 准备离线模型文件\n量化离线模型（关闭算子融合功能）\n在AI处理器上运行生成的 dump数据\n文件标杆数\n据离线推理场景各框架获取 NPU环\n境的dump数据方法一致，请参\n考：\n7.3 准备离线模型 dump数据文\n件量化离线模型（开启算子融合功能）\n在AI处理器上运行生成的 dump数据\n文件待比对\n数据\n \n7.2 准备离线模型文件\n非量化离线模型文件\n以下介绍通过 ATC模型转换工具获取离线模型的操作步骤，更多操作请参见《 ATC离线\n模型编译工具 》。\n步骤1以运行用户登录 Ascend-cann-toolkit 所在环境。\n步骤2获取原始模型文件并保存在任意目录下。\n例如： resnet50.prototxt 和resnet50.caffemodel\n步骤3开启算子融合功能执行 ATC模型转换。\natc --model= $HOME/module/resnet50.prototxt  --weight= $HOME/module/resnet50.caffemodel  --\nframework= 0 --output= $HOME/module/out/caffe_resnet50_on  --soc_version= <soc_version>  \n说明\n模型转换时，算子融合功能默认开启，无需配置。\n若提示如下信息，则说明模型转换成功。\nATC run success\n成功执行命令后，在 $HOME/module/out/ 目录下生成离线模型（如：\ncaffe_resnet50_on.om ）。\n步骤4关闭算子融合功能执行 ATC模型转换。CANN社区版\n精度调试工具用户指南 7 NPU vs NPU （离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 35"
+    },
+    {
+      "page": 41,
+      "content": "atc --model= $HOME/module/resnet50.prototxt  --weight= $HOME/module/resnet50.caffemodel  --\nframework= 0 --output= $HOME/module/out/caffe_resnet50_off  --soc_version= <soc_version>   --\nfusion_switch_file= $HOME/module/fusion_switch.cfg\n说明\n关闭算子融合功能需要通过 --fusion_switch_file 参数指定算子融合规则配置文件（如\nfusion_switch.cfg ），并在配置文件中关闭算子融合功能。融合规则配置文件关闭配置如下：\n{\n    \"Switch\":{\n        \"GraphFusion\":{\n            \"ALL\":\"off\"\n        },\n        \"UBFusion\":{\n            \"ALL\":\"off\"\n         }\n    }\n}\n若提示如下信息，则说明模型转换成功。\nATC run success\n成功执行命令后，在 $HOME/module/out/ 目录下生成离线模型（如：\ncaffe_resnet50_off.om ）。\n----结束\n量化离线模型文件\n以下仅以Caffe模型为例介绍通过 AMCT模型压缩工具获取量化信息文件的操作步骤，\n更多操作请参见《 AMCT模型压缩工具 》。\n步骤1参见《 AMCT模型压缩工具 》的“工具安装”章节完成工具安装。\n步骤2获取原始模型文件并保存在任意目录下。\n例如： resnet50.prototxt 和resnet50.caffemodel\n步骤3准备模型相匹配的二进制数据集。\n1.切换到amct_caffe/cmd 目录，执行如下命令，用于下载校准数据集。\ncd data \nmkdir image && cd image\nwget https://obs-9be7.obs.cn-east-2.myhuaweicloud.com/models/amct_acl/classification/calibration.rar\nunrar e calibration.rar\n2.在amct_caffe/cmd 目录，执行如下命令将 calibration 目录下 *.jpg格式数据集转换\n为bin格式数据集。\npython3 ./src/process_data.py\n执行完成后，在 data目录会生成新的 calibration 目录，并在该目录生成\ncalibration.bin 格式数据集。\n步骤4执行如下命令进行网络模型的量化操作。\namct_caffe  calibration --model= ./model/resnet50.prototxt  --weights= ./model/resnet50.caffemodel  --\nsave_path= ./results  --input_shape= \"data:1,3,224,224\"  --data_dir= \"./data/calibration\"  --data_types= \"float32\"\n步骤5若提示如下信息且无 Error日志信息，则说明模型量化成功。\nINFO - [AMCT]:[Utils]: The weights_file  is saved in $HOME/xxx/results/\nresnet50_fake_quant_weights.caffemodel\nINFO - [AMCT]:[Utils]: The model_file  is saved in $HOME/xxx/results/resnet50_fake_quant_model.prototxt\n量化后生成文件说明如下：\n● resnet50_quant.json ：量化信息文件，记录了量化模型同原始模型节点的映射关\n系，用于量化后模型同原始模型精度比对使用。CANN社区版\n精度调试工具用户指南 7 NPU vs NPU （离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 36"
+    },
+    {
+      "page": 42,
+      "content": "● resnet50_deploy_model.prototxt ：量化后的可在 AI处理器部署的模型文件。\n●resnet50_deploy_weights.caffemodel ：量化后的可在 AI处理器部署的权重文件。\n● resnet50_fake_quant_model.prototxt ：量化后的可在 Caffe环境进行精度仿真模\n型文件。\n●resnet50_fake_quant_weights.caffemodel ：量化后的可在 Caffe环境进行精度仿\n真权重文件。\n步骤6按照非量化离线模型文件 中的ATC操作将量化原始模型文件\nresnet50_deploy_model.prototxt 和resnet50_deploy_weights.caffemodel 进行模型转\n换，即可获取到开启和关闭算子融合功能的量化离线模型文件。\n----结束\n7.3 准备离线模型 dump数据文件\n使用前须知\n●请在dump数据前，完成模型对应的应用工程的编译、运行，确保工程正常。\n●每次推理都会产生 dump数据，在循环次数较多时，每次推理产生的 dump数据量\n会相应增加，建议 dump数据时仅执行一次推理。对于大模型场景，通常 dump数\n据量庞大且耗时较长，可以通过 dump_data 开启算子统计功能，根据统计数据识\n别可能异常的算子，然后仅针对这些可能异常的算子进行 dump。\n● Docker 场景下，不支持将容器作为运行环境使用 dump功能。\n●提供aclInit() 接口和 aclmdlSetDump() 接口两种接口方式 dump数据。\n–aclInit() 接口的详细使用方法请参见“ aclInit”。\n–aclmdlSetDump() 接口的详细使用方法请参见“ aclmdlSetDump ”。\ndump数据\n参考以下步骤进行离线模型 dump操作：\n步骤1打开aclInit() 函数所在的推理应用工程代码文件，查看调用的 aclInit() 或\naclmdlSetDump() 函数，获取 acl.json文件路径。\n说明\n如果aclInit()或aclmdlSetDump() 初始化为空，则需要修改该函数，补充 步骤2创建的 acl.json路\n径。这里的 acl.json路径是相对工程编译生成的二进制文件的路径。\n步骤2在查到的目录下修改 acl.json文件（如不存在，则需要新建，建议放在工程编译后的\nout目录下），添加 dump配置，格式如下所示。\n模型推理场景下，开启 dump数据采集：\n{                                                                                            \n    \"dump\":{\n        \"dump_list\":[                                                                        \n            {    \"model_name\":\"ResNet-101\"\n            },\n            {                                                                                \n                \"model_name\":\"ResNet-50\",\n                \"layer\":[\n                      \"conv1conv1_relu\",\n                      \"res2a_branch2ares2a_branch2a_relu\",\n                      \"res2a_branch1\",CANN社区版\n精度调试工具用户指南 7 NPU vs NPU （离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 37"
+    },
+    {
+      "page": 43,
+      "content": "                      \"pool1\"\n                ] \n            }  \n        ],  \n        \"dump_path\":\"/home/output\",\n                \"dump_mode\":\"output\",\n        \"dump_op_switch\":\"off\",\n                \"dump_data\":\"tensor\"\n    }                                                                                        \n}\n单算子调用场景下，开启 dump数据采集：\n{\n    \"dump\":{\n        \"dump_path\":\"/home/output\",\n        \"dump_list\":[{}], \n    \"dump_op_switch\":\"on\",\n        \"dump_data\":\"tensor\"\n    }\n}\n表7-5 acl.json 文件格式说明\n配置项 参数说明\ndump_list （必选）待 dump数据的整网模型列表。\n●模型推理场景下，当需要 Dump全部算子时，配置\n为：\n\"dump_list\":[{}]\n当需要 Dump多个模型或特定算子时，需要结合\nmodel_name 和layer使用。\n●在单算子调用场景（包括单算子模型执行和单算子\nAPI执行）下， dump_list 建议配置为：\n\"dump_list\":[{}]\nmodel_name 模型名称，各个模型的 model_name 值须唯一。\n●模型加载方式为文件加载时，填入模型文件的名称，\n不需要带后缀名；也可以配置为 ATC模型文件转换后\n的json文件里的最外层 \"name\"字段对应值。\n●模型加载方式为内存加载时，配置为 ATC模型文件转\n换后的 json文件里的最外层 \"name\"字段对应值。CANN社区版\n精度调试工具用户指南 7 NPU vs NPU （离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 38"
+    },
+    {
+      "page": 44,
+      "content": "配置项 参数说明\nlayer IO性能较差时，可能会因为数据量过大而导致执行超\n时，因此不建议进行全量 dump，请指定算子进行\ndump。通过该字段可以指定需要 dump的算子名，支持\n指定为 ATC模型转换后的算子名，也支持指定为转换前\n的原始算子名，配置时需注意：\n●需按格式配置，每行配置模型中的一个算子名，且每\n个算子之间用英文逗号隔开。\n●用户可以无需设置 model_name ，此时会默认 dump\n所有model下的相应算子。如果配置了\nmodel_name ，则dump对应model下的相应算子。\n在动态 shape的静态子图场景中，如果配置的是根图\nmodel_name ，那么根图和子图里的算子都会被\ndump下来。\n●若指定的算子其输入涉及 data算子，会同时将 data算\n子信息 dump出来；若需 dump data 算子，需要一并\n填写data节点算子的后继节点，才能 dump出data节\n点算子数据。\n●当需要 dump模型中所有算子时，不需要包含 layer字\n段。CANN社区版\n精度调试工具用户指南 7 NPU vs NPU （离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 39"
+    },
+    {
+      "page": 45,
+      "content": "配置项 参数说明\noptype_blacklist 配置dump数据黑名单，黑名单中的指定类型的算子的\n输入或输出数据不会进行数据 dump，用户可通过该配\n置控制 dump的数据量。\n该功能仅在执行模型数据 dump操作，且 dump_level 为\nop时生效，同时支持和 opname_blacklist 配合使用。\n配置示例：\n{\n\"dump\":{\n\"dump_list\":[\n{\n\"model_name\":\"ResNet-50\",\n\"optype_blacklist\":[\n{\n\"name\":\"conv\"\n\"pos\":[\"input0\", \"input1\"]\n}\n]\n}\n],\n\"dump_path\":\"/home/output\",\n\"dump_mode\":\"input\",\n}\n}\n以上示例表示：不对 conv算子的 input0数据和 input1数\n据执行 dump操作， conv为算子类型。\noptype_blacklist 中包括 name和pos字段，配置时需注\n意：\n● name 表示算子类型，支持指定为 ATC模型转换后的\n算子类型，配置为空时该过滤项不生效。\n● pos表示算子的输入或输出，仅支持配置为 inputn或\noutputn格式，其中 n表示输入输出索引号。配置为\n空时该过滤项不生效。\n● optype_blacklist 内最多支持配置 100个过滤项。\n●如果配置了 model_name ，则仅对该 model下的算子\n生效。如果不配置 model_name ，则对所有 model下\n的算子生效。CANN社区版\n精度调试工具用户指南 7 NPU vs NPU （离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 40"
+    },
+    {
+      "page": 46,
+      "content": "配置项 参数说明\nopname_blacklist 配置dump数据黑名单，黑名单中的指定名称的算子的\n输入或输出数据不会进行数据 dump，用户可通过该配\n置控制 dump的数据量。\n该功能仅在执行模型数据 dump操作，且 dump_level 为\nop时生效，同时支持和 optype_blacklist 配合使用。\n配置示例：\n{\n\"dump\":{\n\"dump_list\":[\n{\n\"model_name\":\"ResNet-50\",\n\"opname_blacklist\":[\n{\n\"name\":\"conv\"\n\"pos\":[\"input0\", \"input1\"]\n}\n]\n}\n],\n\"dump_path\":\"/home/output\",\n\"dump_mode\":\"input\",\n}\n}\n以上示例表示：不对 conv算子的 input0数据和 input1数\n据执行 dump操作， conv为算子名称。\nopname_blacklist 中包括 name和pos字段，配置时需注\n意：\n● name 表示算子名称，支持指定为 ATC模型转换后的\n算子名称，配置为空时该过滤项不生效。\n● pos表示算子的输入或输出，仅支持配置为 inputn或\noutputn格式，其中 n表示输入输出索引号。配置为\n空时该过滤项不生效。\n● opname_blacklist 内最多支持配置 100个过滤项。\n●如果配置了 model_name ，则仅对该 model下的算子\n生效。如果不配置 model_name ，则对所有 model下\n的算子生效。CANN社区版\n精度调试工具用户指南 7 NPU vs NPU （离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 41"
+    },
+    {
+      "page": 47,
+      "content": "配置项 参数说明\nopname_range 配置dump数据范围，对 begin到end闭区间内的数据执\n行dump操作。\n该功能仅在执行模型数据 dump操作，且 dump_level 为\nop时生效。\n配置示例：\n{\n\"dump\":{\n\"dump_list\":[\n{\n\"model_name\":\"ResNet-50\",\n\"opname_range\":[{\"begin\":\"conv1\", \"end\":\"relu1\" },\n{\"begin\":\"conv2\", \"end\":\"pool1\"}]\n}\n],\n\"dump_mode\":\"output\",\n\"dump_level\": \"op\",\n\"dump_path\":\"/home/output\"\n}\n}\n以上示例表示对 conv1到relu1、conv2到pool1闭区间内\n的数据执行 dump操作， conv1、relu1、conv2、pool1\n表示算子名称。\n配置时需注意：\n● model_name 不允许为空。\n● begin 和end中的参数表示算子名称，支持指定为 ATC\n模型转换后的算子名称。\n● begin 和end不允许为空，且只能配置为非 data算\n子；若 begin和end范围内算子的输入涉及 data算\n子，会同时对 data算子信息执行 dump操作。\ndump_path （必选） dump数据文件存储到运行环境的目录，该目\n录需要提前创建且确保安装时配置的运行用户具有读写\n权限。\n支持配置绝对路径或相对路径：\n●绝对路径配置以“ /”开头，例如： /home/output 。\n●相对路径配置直接以目录名开始，例如： output。CANN社区版\n精度调试工具用户指南 7 NPU vs NPU （离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 42"
+    },
+    {
+      "page": 48,
+      "content": "配置项 参数说明\ndump_mode dump数据模式。\n● input：dump算子的输入数据。\n● output ：dump算子的输出数据，默认取值 output。\n● all：dump算子的输入、输出数据。\n注意，配置为 all时，由于部分算子在执行过程中会修\n改输入数据，例如集合通信类算子 HcomAllGather 、\nHcomAllReduce 等，因此系统在进行 dump时，会在\n算子执行前 dump算子输入，在算子执行后 dump算\n子输出，这样，针对同一个算子，算子输入、输出的\ndump数据是分开落盘，会出现多个 dump文件，在\n解析dump文件后，用户可通过文件内容判断是输入\n还是输出。\ndump_level dump数据级别，取值：\n● op：按算子级别 dump数据。\n● kernel ：按kernel级别dump数据。\n● all：默认值， op和kernel级别的数据都 dump。\n默认配置下， dump数据文件会比较多，例如有一些\naclnn开头的 dump文件，若用户对 dump性能有要求或\n内存资源有限时，则可以将该参数设置为 op级别，以便\n提升dump性能、精简 dump数据文件数量。\n说明：算子是一个运算逻辑的表示（如加减乘除运\n算）， kernel是运算逻辑真正进行计算处理的实现，需\n要分配具体的计算设备完成计算。\ndump_op_switch 单算子调用场景（包括单算子模型执行和单算子 API执\n行）下，是否开启 dump数据采集。\n● on：开启。\n●off：关闭，默认取值 off。CANN社区版\n精度调试工具用户指南 7 NPU vs NPU （离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 43"
+    },
+    {
+      "page": 49,
+      "content": "配置项 参数说明\ndump_step 指定采集哪些迭代的 dump数据。推理场景无需配置。\n不配置该参数，默认所有迭代都会产生 dump数据，数\n据量比较大，建议按需指定迭代。\n多个迭代用“ |”分割，例如： 0|5|10；也可以用“ -”指\n定迭代范围，例如： 0|3-5|10。\n配置示例：\n{\n\"dump\":{\n\"dump_list\":[\n......\n],\n\"dump_path\":\"/home/output\",\n\"dump_mode\":\"output\",\n\"dump_op_switch\":\"off\",\n\"dump_step\": \"0|3-5|10\"\n}\n}\n训练场景下，若通过 acl.json中的dump_step 参数指定采\n集哪些迭代的 dump数据，又同时在 GEInitialize 接口中\n配置了 ge.exec.dumpStep 参数（该参数也用于指定采集\n哪些迭代的 dump数据），则以最后配置的参数为准。\nGEInitialize 接口的详细介绍请参见《 图开发》。\ndump_data 算子dump内容类型，取值：\n● tensor: dump 算子数据，默认为 tensor。\n● stats: dump 算子统计数据，结果文件为 csv格式，文\n件中包含算子名称、输入 /输出的数据类型、最大\n值、最小值等。\n通常dump数据量太大并且耗时长，可以先对算子统计\n数据进行 dump，根据统计数据识别可能异常的算子，\n然后再 dump算子数据。CANN社区版\n精度调试工具用户指南 7 NPU vs NPU （离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 44"
+    },
+    {
+      "page": 50,
+      "content": "配置项 参数说明\ndump_stats 当dump_data=stats 时，可通过本参数设置收集统计数\n据中的哪一类数据。\n仅Atlas A2 训练系列产品 /Atlas A2 推理系列产品支持\n该参数。\n本参数取值如下（若不指定取值，默认采集 Max、\nMin、Avg、Nan、Negative Inf 、Positive Inf 数据）：\n● Max：dump算子统计数据中的最大值。\n● Min：dump算子统计数据中的最小值。\n● Avg：dump算子统计数据中的平均值。\n● Nan：dump算子统计数据中未定义或不可表示的数\n值，仅针对浮点类型 half、bfloat、float。\n● Negative Inf ：dump算子统计数据中的负无穷值，\n仅针对浮点类型 half、bfloat、float。\n● Positive Inf ：dump算子统计数据中的正无穷值，仅\n针对浮点类型 half、bfloat、float。\n● L2norm ：dump算子统计数据的 L2Norm值。\n配置示例：\n{\n\"dump\":{\n\"dump_list\":[\n......\n],\n\"dump_path\":\"/home/output\",\n\"dump_mode\":\"output\",\n\"dump_data\":\"stats\",\n\"dump_stats\":[\"Max\", \"Min\"]\n}\n}\n \n步骤3运行应用程序，生成 dump数据文件，生成的路径及格式说明如下。\n模型推理场景下， dump数据落盘路径为： {dump_path} /{time} /{device_id} /\n{model_name} /{model_id} /{data_index} /{dump文件}\n单算子调用场景（包括单算子模型执行和单算子 API执行）下， dump数据落盘路径\n为：{dump_path} /{time} /{device_id} /{dump文件}CANN社区版\n精度调试工具用户指南 7 NPU vs NPU （离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 45"
+    },
+    {
+      "page": 51,
+      "content": "表7-6 dump数据文件路径说明\n路径key 说明 备注\ndump_path acl.json中配置的 dump数据文件存储目\n录。dump数据文件命名格式\n为：{op_type}.\n{op_name}.{task_id}.\n{stream_id}.{timestamp}\ntime dump数据文件落盘的时间。 格式为：\nYYYYMMDDHHMMSS\ndevice_id 设备ID。 -\nmodel_na\nme模型名称。 如果model_name 出现了\n“.”、“ /”、“ \\”、空\n格时，转换为下划线表\n示。\nmodel_id 模型ID号。 -\ndata_index 针对每个 Task ID执行的次数维护一个序\n号，从 0开始计数，该 Task每dump一次\n数据，序号递增 1。-\n \n说明\n● dump 数据文件如果 op_type、op_name 出现了“ .”、“ /”、“ \\”、空格时，则会转换为下\n划线表示。\n●如果文件名称长度超过了 OS文件名称长度限制（一般是 255个字符），则会将该 dump文件\n重命名为一串随机数字，映射关系可查看同目录下的 mapping.csv 。\n●在图执行过程中，以下算子不会产生 dump数据：\n–在图执行前，已明确不会在 Device侧执行的算子，如条件类算子 (if/while/for/case\n等)、数据类算子 (Data/RefData/Const 等)、数据流算子 (StackPush/StackPop/Concat/\nSplit等)。\n–在图优化阶段，被 GE标记为不在 Device侧执行的算子，这些算子在 dump图中的 attr的\n_no_task 属性为 true。\n–图中不会到达最终执行分支的算子。\n----结束\n7.4 比对操作和分析\n说明\n当指定的比对数据文件大小超过 1GB或.json文件大小超过 100MB时，比对过程可能耗\n时较长，系统提示： 'The size (%d) of %s more than the XX, it needs more time to\nrun.'。\n前提条件\n●请确保完成 2 使用前准备 。CANN社区版\n精度调试工具用户指南 7 NPU vs NPU （离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 46"
+    },
+    {
+      "page": 52,
+      "content": "●根据7.1 总体说明 中的场景准备比对文件。\n操作步骤\n步骤1登录CANN工具安装环境。\n步骤2生成json文件。\n●使用开启算子融合功能的离线模型生成 resnet50_on.json 文件。\natc --mode= 1 --om=$HOME/module/out/caffe_resnet50_on.om  --json=$HOME/module/out/\ncaffe_resnet50/resnet50_on.json\n●使用关闭算子融合功能的离线模型生成 resnet50_off.json 文件。\natc --mode= 1 --om=$HOME/module/out/caffe_resnet50_off.om  --json=$HOME/module/out/\ncaffe_resnet50/resnet50_off.json\n说明\n版本迭代前后精度比对 场景跳过此步骤。\n步骤3进入${INSTALL_DIR}/tools/operator_cmp/compare ，${INSTALL_DIR} 请替换为 CANN\n软件安装后文件存储路径。以 root用户安装为例，安装后文件默认存储路径为： /usr/\nlocal/Ascend/cann 。\n步骤4执行比对命令。\n假设开启和关闭算子融合功能的离线模型在 AI处理器上运行生成 dump数据。\n数据分别保存在：\n● $HOME/MyApp_mind/resnet50_on\n●$HOME/MyApp_mind/resnet50_off\n版本迭代前后精度比对 场景同样是把两份比对数据保存在不同目录下。\n说明\n由于dump和npy比对数据文件是由多个文件组成，故下文操作步骤中 -m和-g参数须指定数据文\n件所在的父目录。如： $HOME/MyApp/resnet50 ，其中resnet50 文件夹下直接保存比对数据文\n件。\n目录结构示例如下：\nroot@xxx:$HOME/MyApp/resnet50# tree\n.\n├── BatchMatMul.bert_encoder_layer_0_attention_self_MatMul_1.24.1614717261785536\n├── BatchMatMul.bert_encoder_layer_0_attention_self_MatMul.21.1614717261768864\n├── BatchMatMul.bert_encoder_layer_10_attention_self_MatMul_1.235.1614717263664916\n# 仅为示例，此处省略剩余文件名。\n指定全网层信息文件（即配置 -f和-cf参数）\npython3 msaccucmp.py compare -m $HOME/MyApp_mind/resnet50_on  -g $HOME/MyApp_mind/\nresnet50_off   -f $HOME/module/out/caffe_resnet50/resnet50_on.json  -cf $HOME/module/out/\ncaffe_resnet50/resnet50_off.json  -out $HOME/MyApp_mind/out\n或\n不指定全网层信息文件（即不配置 -f和-cf参数）\npython3 msaccucmp.py compare -m $HOME/MyApp_mind/resnet50_on  -g $HOME/MyApp_mind/\nresnet50_off  -out $HOME/MyApp_mind/outCANN社区版\n精度调试工具用户指南 7 NPU vs NPU （离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 47"
+    },
+    {
+      "page": 53,
+      "content": "说明\n上述命令仅展示当前场景所需参数的示例，若需要配置更多参数，比如已知可能出现精度问题的\n范围或因大型网络模型输出结果文件数据量过大，通过配置参数来减少输出结果的数据量，请参\n见11.2 命令格式说明 获取更多参数详细介绍。\n表7-7 整网比对命令行参数说明\n参数名 参数说明 是否\n必选\n-m\n--my_dump_path开启算子融合功能的离线模型基于 AI处理器运行生成\n的数据文件所在目录。是\n-g\n--\ngolden_dump_pat\nh关闭算子融合功能的离线模型基于 AI处理器运行生成\n的数据文件所在目录。是\n-f\n--fusion_rule_file全网层信息文件。使用开启算子融合功能的离线模型\n通过ATC转换生成的 .json文件。\n版本迭代前后精度比对 场景无需配置。否\n-cf\n--\nclose_fusion_rule_f\nile全网层信息文件。\n使用关闭算子融合功能的离线模型通过 ATC转换生成\n的.json文件。\n版本迭代前后精度比对 场景无需配置。否\n-out\n--output比对数据结果存放路径，默认为当前路径。\n不建议配置与当前用户不一致的其它用户目录，避免\n提权风险。否\n \n比对结果如 图7-1所示。\n图7-1 融合算子精度问题排查比对结果\n以上比对结果字段解释请参见 11.3 完整比对结果参数说明 。\n其中NPUDump 表示开启算子融合功能的离线模型的算子名； GroundTruth 表示关闭算\n子融合功能的离线模型的算子名。\n步骤5比对结果分析。CANN社区版\n精度调试工具用户指南 7 NPU vs NPU （离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 48"
+    },
+    {
+      "page": 54,
+      "content": "请参见 9 比对结果分析 。对于比对结果中可能存在部分无法比对或异常情况（例如结\n果中的 NaN），请参见 8 比对结果说明 。\n----结束CANN社区版\n精度调试工具用户指南 7 NPU vs NPU （离线推理）\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 49"
+    },
+    {
+      "page": 55,
+      "content": "8 比对结果说明\n本节内容主要说明对于比对结果中可能存在部分无法比对或异常情况（比如结果中的\nNaN）。\n●对于Caffe、TensorFlow 模型，若不是相同模型的数据，但模型中有相同的算子名\n称，也可以进行比对，但结果数据只显示匹配到的相同算子的比对结果，该场景\n不进行分析。\n●如果在图编译过程中，原图的算子发生了融合，导致算子的 output在编译后的模\n型中找不到对应的 output时，该算子无法进行比对。\n●如果在图编译阶段对图做了结构性修改（如 stride切分、 L1 fusion 、L2 fusion ）\n的场景，会造成算子的 input或output无法比对。\n●如果比对数据两边相同算子有 dump数据，但算子的 Shape不一致（离线模型算子\nShape变小）或 Format不支持转换，该算子无法进行比对。\n●量化模型里经过量化处理的算子无法比对，必须是反量化的输出才能比对。例\n如，量化模型里 AscendQuant 算子的 output无法比对。\n●针对FastRCNN 网络场景， ProposalD 算子及之后的算子，算子精度不达标属于正\n常情况，最终结果以 FSRDetectionOutput 算子的比对结果精度为准。\n●当模型转换对输入数据做了额外的预处理，造成原始模型的输入与离线模型的\ndata算子输入格式不同时（比如 AIPP场景下 data输入为 YUV），data算子比对结\n果异常、不具备参考价值。\n●如果比对数据两边相同算子有多个 input且input顺序不一致，会导致该算子的\ninput的比对结果不可信。\n●如果没有关闭对应的融合规则，会使得量化算子与之前的算子进行融合，导致该\n算子的 output的比对结果不可信。CANN社区版\n精度调试工具用户指南 8 比对结果说明\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 50"
+    },
+    {
+      "page": 56,
+      "content": "9 比对结果分析\n9.1 比对结果分析指导\n9.2 比对结果专家建议\n9.3 计算精度评价指标\n9.4 npy与npy文件之间的精度比对\n9.5 单算子比对\n9.1 比对结果分析指导\n说明\n●显示“ *”，表示在 NPU侧新增独有的算子；无对应的标准算子，无法进行比对，结果显示为\n“NaN”。\n●余弦相似度和 KL散度比对结果为 NaN，其他算法有比对数据，则表明该算子的待比对或标杆\n数据为 0；KL散度比对结果为 Inf，则表明该算子的标杆数据中有一个为 0。\n1.针对常见精度问题，通过输出“ Advisor”专家建议 ，快速定位问题算子。\n2.针对专家建议无法覆盖的复杂场景，通过查看整网比对结果中不同的算法指标，\n根据9.3 计算精度评价指标 ，定位存在精度问题的算子。\n3.在多次比对或存在模糊问题定界场景中，可以通过配置 -r或-s参数，实现任意选定\n范围内的算子精度比对，尤其针对偏大型网络，可以实现快速定位精度问题， -r\n或-s参数详细介绍请参见 11.2 命令格式说明 。\n4.针对存疑的比对结果可以先进行 9.4 npy与npy文件之间的精度比对 进行精度问题\n排查。\n5.针对精度差异较大算子，可通过 9.5 单算子比对 功能进一步分析对应张量的详细精\n度差异。\n6.针对问题算子，根据具体场景，通过算子本身的修改、算子替换、算子融合等方\n式进行详细优化。\n9.2 比对结果专家建议CANN社区版\n精度调试工具用户指南 9 比对结果分析\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 51"
+    },
+    {
+      "page": 57,
+      "content": "9.2.1 概述\n精度比对工具本身只提供自有实现算子在 AI处理器上的运算结果与业界标准算子的运\n算结果的差异比对功能，输出的比对结果需要用户自行分析并找出问题。对于用户来\n说，对结果的分析工作也是一大难点。本节提供专家系统工具为用户提供精度比对结\n果的分析功能，有效减少用户排查问题的时间。\n当前支持的分析检测类型有： Float16溢出检测、输入不一致检测、整网一致性检测\n（整网一致性检测包括：问题节点检测、单点误差检测和一致性检测三个小点）。\n9.2.2 使用前必读\n环境准备\n需要安装 pandas 1.3 或更高版本依赖。安装示例： pip3 install pandas==1.3.5 。非\nroot用户安装，需要在安装命令后加上 --user，例如： pip3 install pandas==1.3.5 --\nuser。\n约束\n本功能不支持以下场景：\n●单算子比对的结果文件分析。\n●指定了 --select或--range参数生成的比对结果文件分析。\n9.2.3 通过命令行方式分析比对结果\n命令格式说明\n通过命令行方式分析比对结果是基于精度比对的基础上执行 -advisor参数功能，完成精\n度比对之后继续进行专家系统分析并输出结果。\n命令行格式如下：\npython3 msaccucmp.py compare -m my_dump_path  -g golden_dump_path  -advisor\n表9-1 参数说明\n参数名 参数说明\n-advisor 在Tensor比对结束后，针对比对结果进行数据分析，给出专家建\n议。\n注：-overflow_detection 参数为 Float16溢出检测 专家建议提供数据，配置 -advisor\n后会自动打开该参数功能。\n \n操作步骤\n步骤1登录CANN工具安装环境。\n步骤2生成json文件。\natc --mode= 1 --om= $HOME/data/resnet50.om  --json= $HOME/data/resnet50.jsonCANN社区版\n精度调试工具用户指南 9 比对结果分析\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 52"
+    },
+    {
+      "page": 58,
+      "content": "步骤3进入${INSTALL_DIR}/tools/operator_cmp/compare ，${INSTALL_DIR} 请替换为 CANN\n软件安装后文件存储路径。以 root用户安装为例，安装后文件默认存储路径为： /usr/\nlocal/Ascend/cann 。\n步骤4执行比对命令。\npython3 msaccucmp.py compare -m $HOME/MyApp_mind/resnet50  -g $HOME/Standard_caffe/resnet50  -f \n$HOME/data/resnet50.json  -out $HOME/result  -advisor\n步骤5执行命令后会进行精度比对，比对完成后，系统将自动进行专家系统分析，并打印输\n出结果，结果文件命名为 advisor_summary.txt ，保存路径同样由 -out参数确定。输出\n结果详细介绍请参见 9.2.5 输出结果和优化建议 。\n----结束\n9.2.4 通过脚本工具方式分析比对结果\n脚本工具介绍\n专家系统提供“ mscmp_advisor.py ”脚本工具。功能及安装路径如下：\n表9-2 脚本工具介绍\n脚本名 功能 路径\n“mscmp_advisor.py ”对Tensor比对结果进行专\n家系统分析，并输出优化\n建议。${INSTALL_DIR}/tools/\noperator_cmp/\ncompare ，$\n{INSTALL_DIR} 请替换为\nCANN软件安装后文件存\n储路径。以 root用户安装\n为例，安装后文件默认存\n储路径为： /usr/local/\nAscend/cann 。\n \n命令格式说明\n“mscmp_advisor.py ”脚本是直接用比对结果 .csv文件进行分析，所以在进行该操作前\n需要先完成精度比对获取 .csv文件。\n命令行格式如下：\npython3 mscmp_advisor.py -i <input_file>  [-input_nodes <node_name>] [-o <out_path>]\n表9-3 参数说明\n参数名 参数说明 是否必选\n-i\n--input_file指定比对结果 .csv文件。例如：\n$HOME/result/result_*.csv\n本参数最大支持 .csv文件的大小为\n100M。是CANN社区版\n精度调试工具用户指南 9 比对结果分析\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 53"
+    },
+    {
+      "page": 59,
+      "content": "参数名 参数说明 是否必选\n-input_nodes 指定网络模型的输入节点。多个节点\n用英文分号（ ;）隔开。例如：\n\"node_name1;node_name2;node_na\nme3\"否\n若不配置，则不进行输入\n检测。\n-o\n--out_path分析结果输出路径。结果文件命名为\nadvisor_summary.txt 。\n不建议配置与当前用户不一致的其它\n用户目录，避免提权风险。否\n若不配置，不落盘结果文\n件。\n \n操作步骤\n步骤1登录CANN工具安装环境。\n步骤2生成json文件。\natc --mode= 1 --om= $HOME/data/resnet50.om  --json= $HOME/data/resnet50.json\n步骤3配置环境变量。\nexport PYTHONPATH=${INSTALL_DIR}/tools/operator_cmp/compare:$PYTHONPATH\n步骤4执行精度比对命令。\npython3 msaccucmp.py compare -m $HOME/MyApp_mind/resnet50  -g $HOME/Standard_caffe/resnet50  -f \n$HOME/data/resnet50.json  -out $HOME/result  -overflow_detection\n此处需要配置 -overflow_detection 参数识别溢出算子。执行比对后输出比对结果文件\nresult_*.csv 。\n步骤5执行专家系统分析。\npython3 mscmp_advisor.py -i $HOME/result/result_*.csv  -input_nodes \n\"node_name1;node_name2;node_name3\"  -o $HOME/result\n步骤6执行命令后进行专家系统分析并直接打印输出结果。输出结果详细介绍请参见 9.2.5 输\n出结果和优化建议 。\n----结束\n9.2.5 输出结果和优化建议\nFloat16 溢出检测\n针对比对数据中数据类型为 Float16的数据，进行溢出检测。如果存在溢出数据，输出\n专家建议。\n场景限制 ：量化原始模型的 npy文件（Caffe）与非量化原始模型的 npy文件（Caffe）\n的比对场景不支持溢出检测分析。\n说明\n需在进行精度比对时指定 -overflow_detection 参数。\n比对结果 ：CANN社区版\n精度调试工具用户指南 9 比对结果分析\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 54"
+    },
+    {
+      "page": 60,
+      "content": "算子ID为228的数据，存在 Float16数据溢出。\n专家系统分析结果 ：\nDetection Type: FP16 overflow\nOperator Index: 228\nExpert Advice: Float16 data overflow  occurs. Rectify the fault and perform\ncomparison again.\n检测类型： Float16溢出检测\nOperator Index ：228\n专家建议：存在 Float16数据溢出，请修正溢出问题，再进行比对。\n输入不一致检测\n针对整网的输入数据进行检测，主要判断整网两批待比对数据的输入 data是否一致。\n如果存在不一致问题（余弦相似度 <0.99），输出专家建议。\n比对结果 ：\n算子ID为0的数据，输入数据为 Input_1，其余弦相似度小于 0.99，因此认为此次比\n对，输入或数据预处理存在问题。\n专家系统分析结果 ：\nDetection Type: Input inconsistent\nOperator Index: 0\nExpert Advice: The input data of NPUDump is inconsistent with that of\nGroundTruth. Use the same data or check the data preprocessing process.\n检测类型：输入不一致检测\nOperator Index ：0\n专家建议： NPUDump 和GroundTruth 的输入数据不一致，请使用相同数据或者检查数\n据预处理流程。CANN社区版\n精度调试工具用户指南 9 比对结果分析\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 55"
+    },
+    {
+      "page": 61,
+      "content": "整网一致性检测（问题节点检测）\n判断整网比对结果中，是否某层小于阈值，该层后续数据均小于阈值或最后一层小于\n阈值（余弦相似度 <0.99），输出量化误差修正建议。\n比对结果 ：\n算子ID为1174的数据，余弦相似度小于 0.99，且后续余弦相似度均小于 0.99，判断问\n题节点存在精度问题。\n专家系统分析结果 ：\n检测类型：整网一致性检测\nOperator Index ：1174\n专家建议：部分张量精度较低，且导致最终结果精度不达标；很可能由量化造成，请\n进行数据校准或者您可以获取日志后单击 Link联系技术支持。\n整网一致性检测（单点误差检测）\n判断整网比对结果中，是否某层小于阈值（余弦相似度 <0.99），但最终结果符合精度\n要求，输出专家建议。\n比对结果 ：CANN社区版\n精度调试工具用户指南 9 比对结果分析\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 56"
+    },
+    {
+      "page": 62,
+      "content": "算子ID为195的数据，余弦相似度小于 0.99，但最后一层数据符合精度要求，判断为单\n点误差。\n专家系统分析结果 ：\n检测类型：整网一致性检测\nOperator Index ：195\n专家建议：部分张量精度较低，但最终结果精度达标，可能由内部优化导致，请忽略\n或您可以获取日志后单击 Link联系技术支持。\n整网一致性检测（一致性检测）\n比对结果中的所有数据均符合精度要求，输出专家建议。\n比对结果 ：\n所有数据均符合精度要求，判断模型符合精度要求。\n专家系统分析结果 ：\nDetection Type: global consistency\nOperator Index: NA\nExpert Advice: All data in the comparison result meets the accuracy requirements.\nIf data accuracy of the model is still not up to standard in practical application,\nplease check the post-processing process of model outputs.\n检测类型：整网一致性检测\nOperator Index ：NACANN社区版\n精度调试工具用户指南 9 比对结果分析\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 57"
+    },
+    {
+      "page": 63,
+      "content": "专家建议：比对结果中的所有数据均符合精度要求。\n如果模型实际应用中，精度依旧不达标，请排查输出数据的后处理流程。\n9.3 计算精度评价指标\n精度比对是以 GPU的计算结果为标杆，以不同算法维度，比对算子精度差异，根据每\n个算法维度的结果判断算子在运行时是否存在精度问题。\n说明\n以下仅为推荐的精度评价指标，实际算子需要满足的精度请用户自行判断，判断方式请参见 11.3\n完整比对结果参数说明 。\n计算精度评价指标：\n1. CosineSimilarity ：通过计算两个向量的余弦值来判断其相似度，数值越接近于\n1，说明计算出的两个张量越相似，实际可接受阈值为大于 0.99。在计算中可能会\n存在nan，主要由于可能会出现其中一个向量为 0。\n2. RelativeEuclideanDistance ：欧氏相对距离越接近于 0，表明越相近，实际可接受\n阈值为小于 0.05。\n3. KullbackLeiblerDivergence ：KL散度越小，真实分布与近似分布之间的匹配越\n好，实际可接受阈值为小于 0.005。\n4. MeanAbsoluteError 和RootMeanSquareError ：平均绝对误差和均方根误差相关\n联，MeanAbsoluteError 越大， RootMeanSquareError 等于或近似\nMeanAbsoluteError ，说明整体偏差越集中，实际可接受阈值为等于 1。\n9.4 npy与npy文件之间的精度比对\n概述\n精度比对工具支持单个 npy与npy文件之间的精度比对。基本要求如下：\n●对于dump数据文件需要先完成 执行dump数据文件 Format转换。\n●需要确保两个比对文件内的 Shape一致。\n●仅支持 CosineSimilarity （余弦相似度）、 MaxAbsoluteError （最大绝对误差）、\nAccumulatedRelativeError （累积相对误差）、 RelativeEuclideanDistance （欧氏\n相对距离）、 MeanAbsoluteError （平均绝对误差）、 RootMeanSquareError\n（均方根误差）、 MaxRelativeError （最大相对误差）、 MeanRelativeError （平\n均相对误差）比对算法。\n命令格式说明\npython3 msaccucmp.py file_compare  -m my_dump_path  -g golden_dump_path  -out output\n命令行参数说明如 表9-4所示。\n该功能通过 msaccucmp.py 脚本实现，脚本存放在 ${INSTALL_DIR}/tools/\noperator_cmp/compare ，${INSTALL_DIR} 请替换为 CANN软件安装后文件存储路径。\n以root用户安装为例，安装后文件默认存储路径为： /usr/local/Ascend/cann 。CANN社区版\n精度调试工具用户指南 9 比对结果分析\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 58"
+    },
+    {
+      "page": 64,
+      "content": "表9-4 命令行参数说明\n参数名 参数说明 是否必\n选\n-m\n--my_dump_path待比对的 npy文件。 是\n-g\n--golden_dump_path待比对的 npy标杆数据文件。 是\n-out\n--output比对数据结果存放目录。\n结果文件名格式为：\nfile_result_{timestamp}.txt\n不建议配置与当前用户不一致的其它用户\n目录，避免提权风险。是\n \n操作步骤\n步骤1登录CANN工具安装环境。\n步骤2进入${INSTALL_DIR}/tools/operator_cmp/compare ，${INSTALL_DIR} 请替换为 CANN\n软件安装后文件存储路径。以 root用户安装为例，安装后文件默认存储路径为： /usr/\nlocal/Ascend/cann 。\n步骤3执行file_compare 比对命令。\npython3 msaccucmp.py file_compare  -m my_dump_path/a.npy  -g golden_dump_path/b.npy  -out output\n命令执行完成后输出比对结果。如 图9-1所示。\n图9-1 比对结果\n比对结果可根据 9.3 计算精度评价指标 判断是否符合精度要求。\n----结束CANN社区版\n精度调试工具用户指南 9 比对结果分析\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 59"
+    },
+    {
+      "page": 65,
+      "content": "9.5 单算子比对\n9.5.1 概述\n单算子比对功能由 compare 命令的具体参数决定，主要包括配置输入文件和输出路\n径、选择具体比对算子、设置比对算子的输入或输出数据和输出文件的形式等。可以\n根据参数具体的功能描述，判断输入文件的实际情况，来决定使用具体的参数功能。\n9.5.2 比对操作\n说明\n●本节涉及的 .json文件、目录等名称均为举例，请根据实际环境替换。其中， -out\n指定的结果存放路径，需确保操作用户具有读写权限。\n●基于相同模型（开 /关融合）、 AI处理器运行生成的 dump数据进行单算子精度比\n对时，需同时指定 -f和-cf参数或同时不指定这两个参数。\n操作步骤\n本节以非量化 AI处理器运行生成的 dump数据与非量化 Caffe模型npy文件比对为例进行\n介绍，下文中参数说明均以该示例介绍，请根据您的实际情况进行替换。\n步骤1登录CANN工具安装环境。\n步骤2生成json文件。\natc --mode= 1 --om= $HOME/data/resnet50.om  --json= $HOME/data/resnet50.json\n步骤3进入${INSTALL_DIR}/tools/operator_cmp/compare ，${INSTALL_DIR} 请替换为 CANN\n软件安装后文件存储路径。以 root用户安装为例，安装后文件默认存储路径为： /usr/\nlocal/Ascend/cann 。\n步骤4使用默认配置执行单算子比对\n说明\n由于dump和npy比对数据文件是由多个文件组成，故下文操作步骤中 -m和-g参数须指定数据文\n件所在的父目录。如： $HOME/MyApp/resnet50 ，其中resnet50 文件夹下直接保存比对数据文\n件。\n目录结构示例如下：\nroot@xxx:$HOME/MyApp/resnet50# tree\n.\n├── BatchMatMul.bert_encoder_layer_0_attention_self_MatMul_1.24.1614717261785536\n├── BatchMatMul.bert_encoder_layer_0_attention_self_MatMul.21.1614717261768864\n├── BatchMatMul.bert_encoder_layer_10_attention_self_MatMul_1.235.1614717263664916\n# 仅为示例，此处省略剩余文件名。\npython3 msaccucmp.py compare -m $HOME/MyApp_mind/resnet50  -g $HOME/Standard_caffe/resnet50  -f \n$HOME/data/resnet50.json  -out $HOME/result  -op pool5  -i 0\n各参数详细介绍请参见 11.2 命令格式说明 。\n精度比对结果文件内容如 图9-2和图9-3所示。CANN社区版\n精度调试工具用户指南 9 比对结果分析\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 60"
+    },
+    {
+      "page": 66,
+      "content": "图9-2 单算子比对概要结果\n单算子比对概要结果存放在 {op_name} _input_ {index} _summary.txt 或\n{op_name} _output_ {index} _summary.txt 文件中，各参数说明如下：\n表9-5 单算子比对概要结果的参数说明\n参数 说明\nTotalCount 该算子的 dump数据的 data个数。\nNPUDump 表示My Output 模型算子名。\nGroundTruth 表示Ground Truth 模型的算子名。\nFormat 数据格式。\nMinAbsoluteError 绝对误差的最小值。\nMaxAbsoluteError 绝对误差的最大值。\nMinRelativeError 相对误差的最小值。\nMaxRelativeError 相对误差的最大值。\n \n图9-3 单算子完整比对结果\n单算子比对完整结果存放在 {op_name} _input_ {index} _{file_index} .csv或\n{op_name} _output_ {index} _{file_index} .csv文件中，每个文件最多记录 100万条数CANN社区版\n精度调试工具用户指南 9 比对结果分析\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 61"
+    },
+    {
+      "page": 67,
+      "content": "据。配置 --ignore_single_op_result 参数时不生成此结果。比对结果各列参数说明如 表\n9-6。\n表9-6 单算子完整比对结果参数说明\n参数 说明\nN C H W 数据的坐标点。\nNPUDump My Output 模型的算子 dump值。\nGroundTru\nthGround Truth 模型的算子 dump值。\nRelativeErr\nor相对误差， AbsoluteError 值除以 Ground Truth 模型算子的 dump值比\n对出来的结果。当 Ground Truth 算子的 dump值为0时，该处显示为\n“-”。\nAbsoluteEr\nror绝对误差， My Output 模型算子的 dump值减Ground Truth 模型算子\n的dump值取绝对值比对出来的结果。\n \n若已知输出结果文件数据量较大，可以通过配置参数来减少输出结果的数据量。根据\n9.5.3 结果文件说明 选择合适的比对场景，执行 步骤6，以便快速识别算子存在精度问\n题的位置（输入、输出、坐标点）。\n步骤5（可选）执行单算子比对仅比对 TopN条数据。\npython3 msaccucmp.py compare -m $HOME/MyApp_mind/resnet50  -g $HOME/Standard_caffe/resnet50  -f \n$HOME/data/resnet50.json  -out $HOME/result   -op pool1  -o 0 -n 20\n各参数详细介绍请参见 11.2 命令格式说明 。\n比对完成后的打印结果如 图9-4所示。CANN社区版\n精度调试工具用户指南 9 比对结果分析\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 62"
+    },
+    {
+      "page": 68,
+      "content": "图9-4 前20条数据比对结果\n前20条数据比对 csv结果文件内容如 图9-5和图9-6所示。CANN社区版\n精度调试工具用户指南 9 比对结果分析\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 63"
+    },
+    {
+      "page": 69,
+      "content": "图9-5 绝对误差（ Top20）\n图9-6 相对误差（ Top20）\nCANN社区版\n精度调试工具用户指南 9 比对结果分析\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 64"
+    },
+    {
+      "page": 70,
+      "content": "步骤6比对结果分析。\n输出比对结果文件后，首先将绝对误差或相对误差由大到小排序，找出 TopN条数据，\n用户可以基于自己的评估指标判断该算子精度是否达标。如果不满足精度要求，可以\n将当前测评数据交由算子开发人员进行算子内部逻辑分析。\n说明\n绝对误差或相对误差的值越趋近于 0表示精度越高，但实际算子需要满足的精度根据用户实际需\n求判断。\n----结束\n9.5.3 结果文件说明\n单算子比对执行 9.5.2 比对操作 ，默认比对指定算子数据的绝对误差和相对误差，根据\n指定比对算子的输入或输出数据以及设置的输出文件形式生成比对结果文件如 表9-7。\n表9-7 结果文件形式\n结果文件输出条件 结果文件\n比对输入数据、默认生成前\n20条数据\n--input_tensor单算子比对概要结果：\n{op_name}_input_{index}_summary.txt\n单算子比对完整结果：\n{op_name}_input_{index}_{file_index}.csv\n单算子比对 Top20结果：\n●绝对误差：\n{op_name}_input_{index}_absolute_error_topn.\ncsv\n●相对误差：\n{op_name}_input_{index}_relative_error_topn.c\nsv\n比对输出数据、默认生成前\n20条数据\n--output_tensor单算子比对概要结果：\n{op_name}_output_{index}_summary.txt\n单算子比对完整结果：\n{op_name}_output_{index}_{file_index}.csv\n单算子比对 Top20结果：\n●绝对误差：\n{op_name}_output_{index}_absolute_error_top\nn.csv\n●相对误差：\n{op_name}_output_{index}_relative_error_topn.\ncsvCANN社区版\n精度调试工具用户指南 9 比对结果分析\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 65"
+    },
+    {
+      "page": 71,
+      "content": "结果文件输出条件 结果文件\n比对输入数据、生成前 n条数\n据\n--input_tensor 、--topn单算子比对概要结果：\n{op_name}_input_{index}_summary.txt\n单算子比对完整结果：\n{op_name}_input_{index}_{file_index}.csv\n单算子比对 TopN结果：\n●绝对误差：\n{op_name}_input_{index}_absolute_error_topn.\ncsv\n●相对误差：\n{op_name}_input_{index}_relative_error_topn.c\nsv\n比对输出数据、生成前 n条数\n据\n--output_tensor 、--topn单算子比对概要结果：\n{op_name}_output_{index}_summary.txt\n单算子比对完整结果：\n{op_name}_output_{index}_{file_index}.csv\n单算子比对 TopN结果：\n●绝对误差：\n{op_name}_output_{index}_absolute_error_top\nn.csv\n●相对误差：\n{op_name}_output_{index}_relative_error_topn.\ncsv\n比对输入数据、不生成完整\n比对数据、默认生成前 20条\n数据\n--input_tensor 、--\nignore_single_op_result单算子比对概要结果：\n{op_name}_input_{index}_summary.txt\n单算子比对 Top20结果：\n●绝对误差：\n{op_name}_input_{index}_absolute_error_topn.\ncsv\n●相对误差：\n{op_name}_input_{index}_relative_error_topn.c\nsv\n比对输出数据、不生成完整\n比对数据、默认生成前 20条\n数据\n--output_tensor 、--\nignore_single_op_result单算子比对概要结果：\n{op_name}_output_{index}_summary.txt\n单算子比对 Top20结果：\n●绝对误差：\n{op_name}_output_{index}_absolute_error_top\nn.csv\n●相对误差：\n{op_name}_output_{index}_relative_error_topn.\ncsvCANN社区版\n精度调试工具用户指南 9 比对结果分析\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 66"
+    },
+    {
+      "page": 72,
+      "content": "结果文件输出条件 结果文件\n比对输入数据、配置单个 csv\n文件包含最大文件条数、默\n认生成前 20条数据\n--input_tensor 、--max_line单算子比对概要结果：\n{op_name}_input_{index}_summary.txt\n单算子比对拆分结果：\n{op_name}_input_{index}_{file_index}.csv\n单算子比对 Top20结果：\n●绝对误差：\n{op_name}_input_{index}_absolute_error_topn.\ncsv\n●相对误差：\n{op_name}_input_{index}_relative_error_topn.c\nsv\n比对输出数据、配置单个 csv\n文件包含最大文件条数、默\n认生成前 20条数据\n--output_tensor 、--\nmax_line单算子比对概要结果：\n{op_name}_output_{index}_summary.txt\n单算子比对拆分结果：\n{op_name}_output_{index}_{file_index}.csv\n单算子比对 Top20结果：\n●绝对误差：\n{op_name}_output_{index}_absolute_error_top\nn.csv\n●相对误差：\n{op_name}_output_{index}_relative_error_topn.\ncsv\n注1：当算子名称 {op_name} 过长时，将自动转换为比对算子所在的 dump文件名，\n增加输出转换后的结果文件与实际结果文件（超长算子名未转换）的映射关系文件\n“simple_op_mapping.csv ”。\n注2：file_index 为输出结果 csv文件的编号，默认情况下为 0，当配置 --max_line 时，\n则取值为 (n-1)*max_line ，n为从1开始的正整数。\n注3：以上各参数详细介绍请参见 11.2 命令格式说明 。CANN社区版\n精度调试工具用户指南 9 比对结果分析\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 67"
+    },
+    {
+      "page": 73,
+      "content": "10  扩展功能\n10.1 溢出算子数据采集与解析\nAI业务运行过程中出现浮点异常情况时，可通过溢出算子数据采集和解析进行问题定\n界定位。\n10.2 Top 溢出算子解析\n10.3 dump 数据文件 Format转换\n10.4 查看dump数据文件\n10.5 GPU/NPU 映射表获取\n10.6 自定义算法 .py文件准备\n10.7 AICPU 自定义算子日志解析\n10.8 生成npy文件名异常情况批量处理\n10.9 Windows dump 文件转换为 Linux dump 文件\n10.1 溢出算子数据采集与解析\nAI业务运行过程中出现浮点异常情况时，可通过溢出算子数据采集和解析进行问题定\n界定位。\n采集溢出算子数据\n●离线推理场景，请参见《 应用开发  (C&C++) 》中的“ aclInit”章节采集溢出数\n据。\n● TensorFlow 1.15 训练/在线推理：请参见《 TensorFlow 1.15 模型迁移 》中的“更\n多特性  > 溢出数据采集”章节采集溢出数据。\n查看溢出算子数据\n生成的溢出算子数据文件默认存储在 {dump_path}/{time}/{device_id}/\n{model_name}/{model_id}/{data_index} 目录下，例如：“ /home/HwHiAiUser/\noutput/20200808163566/0/npu_cluster_0/11/0 ”。如果没有采集到溢出数据，即不\n存在溢出情况，则不会生成上述目录。\n存放路径及文件命名规则：CANN社区版\n精度调试工具用户指南 10 扩展功能\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 68"
+    },
+    {
+      "page": 74,
+      "content": "● dump_path ：用户配置的溢出数据存放路径，例如 /home/HwHiAiUser/output 。\n● time ：时间戳，例如 20200808163566 。\n● device_id ：设备 ID。\n● model_name ：子图名称。 model_name 层可能存在多个文件夹，如果\nmodel_name 出现了“ .”、“ /”、“ \\”、空格时，转换为下划线表示。\n● model_id ：子图 ID。\n● data_index ：迭代数，用于保存对应迭代的溢出数据。\n上述目录下会生成如下溢出数据文件：\n●溢出算子的 dump文件：通用命名规则如 {op_type}.{op_name}.{task_id}.\n{stream_id}.{timestamp} ，如果 op_type、op_name 出现了“ .”、“ /”、\n“\\”、空格时，会转换为下划线表示。\n用户可通过 {op_name} 字段确定溢出算子名，特殊场景下（如单算子 API执行场\n景）， {op_name} 字段可能不完全对应算子名称，但可以大致判断出算子名称，\n并通过解析溢出算子 dump文件确定该算子的输入和输出。\n●算子溢出数据文件：命名规则如 Opdebug.Node_OpDebug.{task_id}.{stream_id}.\n{timestamp} 。\n用户可通过 解析算子溢出数据文件 得知溢出相关信息。\n说明\n● Atlas 350 加速卡不支持算子溢出数据文件。\n●文件名中的 task_id不是溢出算子的 task_id，用户不需要关注 task_id的实际含义。\n●在docker内执行时，生成的数据存在 docker里。\n解析溢出算子 dump文件\n步骤1将采集到的数据文件上传到安装有 Toolkit软件包的环境。\n步骤2进入${INSTALL_DIR}/tools/operator_cmp/compare ，${INSTALL_DIR} 请替换为 CANN\n软件安装后文件存储路径。以 root用户安装为例，安装后文件默认存储路径为： /usr/\nlocal/Ascend/cann 。\n步骤3执行msaccucmp.py 脚本，转换 dump文件为 numpy文件。举例：\npython3 msaccucmp.py convert -d /home/HwHiAiUser/dump  -out /home/HwHiAiUser/dumptonumpy  -v 2\n说明\n-d参数支持传入单个文件，对单个 dump文件进行转换，也支持传入目录，对整个 path下所有的\ndump文件进行转换。\n步骤4调用Python，转换 numpy文件为 txt文件。举例：\n$ python3\n>>> import numpy as np\n>>> a = np.load(\"/home/HwHiAiUser/dumptonumpy/Pooling.pool1.1.5.1732082705016774.output.0.npy\")\n>>> b = a.flatten()\n>>> np.savetxt(\"/home/HwHiAiUser/dumptonumpy/Pooling.pool1.1.5.1732082705016774.output.0.txt\", b)\n转换为 .txt格式文件后，维度信息、 dtype均不存在。详细的使用方法请参考 NumPy官\n网介绍。\n----结束CANN社区版\n精度调试工具用户指南 10 扩展功能\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 69"
+    },
+    {
+      "page": 75,
+      "content": "解析算子溢出数据文件\nAtlas 350 加速卡不支持算子溢出数据文件。\n由于生成的溢出数据是二进制格式，可读性较低，需要通过工具将 bin文件解析为用户\n可读性好的 json文件。\n步骤1请根据实际情况，将 算子溢出数据文件 上传到安装有 Toolkit软件包的环境。\n说明\n建议用户将 data_index 最小的目录下时间戳最小的 dump文件作为待解析文件。\n步骤2进入${INSTALL_DIR}/tools/operator_cmp/compare ，${INSTALL_DIR} 请替换为 CANN\n软件安装后文件存储路径。以 root用户安装为例，安装后文件默认存储路径为： /usr/\nlocal/Ascend/cann 。\n步骤3执行解析命令，例如：\npython3 msaccucmp.py convert -d /home/HwHiAiUser/opdebug/\nOpdebug.Node_OpDebug.1.5.1732082705016774  -out /home/HwHiAiUser/result\n关键参数：\n● -d：溢出数据文件所在目录，包括文件名。\n● -out ：解析结果待存储目录，如果不指定，默认生成在当前目录下。\n步骤4解析结果文件内容如下示例。\n说明\n●如果同时开启 AI Core算子溢出检测和 Atomic Add 溢出检测，则仅显示最先出现的溢出信\n息。\n●如下示例中，先出现 AI Core算子溢出信息，因此 Atomic Add 即便是有溢出信息也不会显示\n出来。\n{\n    \"DHA Atomic Add\": {\n        \"model_id\": 0,\n        \"stream_id\": 0,\n        \"task_id\": 0,\n        \"task_type\": 0,\n        \"pc_start\": \"0x0\",\n        \"para_base\": \"0x0\",\n        \"status\": 0\n    },\n    \"L2 Atomic Add\": {\n        \"model_id\": 0,\n        \"stream_id\": 0,\n        \"task_id\": 0,\n        \"task_type\": 0,\n        \"pc_start\": \"0x0\",\n        \"para_base\": \"0x0\",\n        \"status\": 0\n    },\n    \"AI Core\": {\n        \"model_id\": 514,\n        \"stream_id\": 563,\n        \"task_id\": 57,\n        \"task_type\": 0,\n        \"pc_start\": \"0x1008005b0000\",\n        \"para_base\": \"0x100800297000\",\n        \"kernel_code\": \"0x1008005ae000\",\n        \"block_id\": 1,\n        \"status\": 32\n    }\n}CANN社区版\n精度调试工具用户指南 10 扩展功能\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 70"
+    },
+    {
+      "page": 76,
+      "content": "完整字段说明：\n说明\n下列字段包含当前可解析的所有字段，各产品所包含字段请以实际产品解析结果为准。\n● model_id ：标识溢出算子所在的模型 ID。\n● stream_id ：标识溢出算子所在的 Stream ID 。\n● task_id ：标识溢出算子的 Task ID。\n● task_type ：标识溢出算子的 Task类型。\n● context_id ：Context ID ，内部预留。\n● thread_id ：线程 ID，内部预留。\n● pc_start ：标识溢出算子的代码程序的起始位置。\n● para_base ：标识溢出算子的参数起始地址。\n● src_addr ：SDMA传输场景的通信源地址。\n● dst_addr ：SDMA传输场景的通信目的地址。\n● channel_id ：通道 ID。\n● core_id ：AI Core ID 。\n● kernel_code ：标识溢出算子的代码程序起始位置，和 pc_start相同。\n● block_id ：标识溢出算子的 Block ID 参数。\n● status ：AICore的status寄存器状态，包含了溢出的信息。用户可以从 status值分\n析得到具体溢出错误，具体请参见下文“ 通过status分析错误原因 ”。\n----结束\n通过status分析错误原因\n● AI Core 算子溢出检测状态字段 status为十进制表示，需要转换成十六进制，然后\n定位到具体错误。\n例如： status为272，转换成十六进制为 0x00000110 ，则可以判定出可能原因为\n0x00000010+0x00000100 。\n– 0x00000008 ：带符号的整数最小负数 NEG符号位取反溢出。\n– 0x00000010 ：整数加法、减法、乘法或乘加操作计算有溢出。\n– 0x00000020 ：浮点计算有溢出。\n– 0x00000080 ：浮点数转无符号数的输入是负数。\n– 0x00000100 ：Float32转Float16或32位带符号的整数转 Float16中出现溢\n出。\n– 0x00000400 ：CUBE累加出现溢出。\n注：上述浮点异常信息为对应十六进制 bit位的异常表示，可能会出现多种浮点异\n常组合的情况。\n● DHA Atomic Add 溢出检测状态字段 status的值为十进制，大于 0即表示出现 DHA\nAtomic Add 溢出。\n● L2 Atomic Add 溢出检测状态字段 status的值为十进制，大于 0即表示出现 L2\nAtomic Add 溢出。CANN社区版\n精度调试工具用户指南 10 扩展功能\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 71"
+    },
+    {
+      "page": 77,
+      "content": "10.2 Top 溢出算子解析\nAI业务运行过程中可能存在算子溢出的情况，此时若直接进行精度比对操作则会造成\n比对结果不准确。通过执行 查看溢出算子数据 ，可以检测并收集溢出的算子信息，生\n成算子溢出数据文件和溢出算子的 dump文件。\n当生成的算子溢出数据文件和溢出算子的 dump文件的落盘时间与算子溢出的时间不一\n致时，在这两个文件中则无法第一时间定位到第一个溢出的算子。\n为了帮助用户快速定位溢出算子，本章节介绍的 Top溢出算子解析，可以对生成的\nDebug file和溢出算子的 dump文件进行分析，并展示 TopN溢出算子的关键信息。\n命令格式说明\n算子溢出检测命令行格式如下 :\npython3 msaccucmp.py overflow  -d <dump_path> -out <output_path> [-n <topn>]\n命令行参数说明如 表10-1所示。\n该功能通过 msaccucmp.py 脚本实现，脚本存放在 ${INSTALL_DIR}/tools/\noperator_cmp/compare ，${INSTALL_DIR} 请替换为 CANN软件安装后文件存储路径。\n以root用户安装为例，安装后文件默认存储路径为： /usr/local/Ascend/cann 。\n表10-1 算子溢出检测命令行参数说明\n参数名 参数说明 是否必选\n-d\n--dump_pathDebug file和溢出算子的 dump文件所在目录。\n请参见查看溢出算子数据 获取文件目录。\n目录下如果缺少 dump文件，则会导致 -out输出时缺\n少npy文件；如果目录下没有 Debug file，则表示无\n溢出。是\n-out\n--output_path算子溢出分析结果文件输出目录。\n输出文件包括：\n● Debug file生成的 json文件。过程文件，用于提\n取结果文件中 topn溢出算子的算子名称和溢出信\n息。\n●溢出算子的 dump数据生成的 npy文件，包含算子\n的输入输出数据。过程文件，用于提取结果文件\n中算子溢出的关键信息。\n●算子溢出检测分析结果文件，汇总 topn溢出算子\n的信息。结果文件，命名格式为\n“overflow_summary_{timestamp}.txt ”。\n缺少npy文件，会导致结果文件解析不到溢出算子的\n输入输出信息。\n不建议配置与当前用户不一致的其它用户目录，避\n免提权风险。是CANN社区版\n精度调试工具用户指南 10 扩展功能\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 72"
+    },
+    {
+      "page": 78,
+      "content": "参数名 参数说明 是否必选\n-n\n--topn解析溢出的前 N个算子，取值范围为 1~5，默认值为\n1。否\n \n执行步骤\n使用以下步骤进行算子溢出分析之前请参见 查看溢出算子数据 ，对dump文件进行算子\n溢出检测，并生成 Debug file和溢出算子的 dump文件。\n算子溢出检测命令行方式操作步骤：\n说明\n-out指定的结果文件存放路径，请确保操作用户具有读写权限。\n步骤1登录CANN工具安装环境。\n步骤2进入${INSTALL_DIR}/tools/operator_cmp/compare ，${INSTALL_DIR} 请替换为 CANN\n软件安装后文件存储路径。以 root用户安装为例，安装后文件默认存储路径为： /usr/\nlocal/Ascend/cann 。\n步骤3执行算子溢出检测命令。\npython3 msaccucmp.py overflow  -d /MyApp20/dump  -out /MyApp20/out  -n 3\n执行算子溢出检测结果 overflow_summary_{timestamp}.txt 文件内容如 图10-1所示。\n图10-1 溢出算子结果信息\n结果文件信息中，根据展示数据从上到下顺序，展示信息如下：\n●从1到n表示解析出第一个溢出的算子到第 n个溢出的算子。\n●每个溢出算子的类型和名称。\n●算子的溢出信息，包括：溢出类型，溢出的任务 ID，流ID和溢出错误码。CANN社区版\n精度调试工具用户指南 10 扩展功能\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 73"
+    },
+    {
+      "page": 79,
+      "content": "● timestamp 为算子溢出的时间戳。\n● *.input.*.npy 为溢出算子的输入数据的 npy文件。\n● *.input.*.npy 文件名下方展示的是文件中算子溢出的输入关键信息，包括数据格\n式，数据维度，数据类型，最大值，最小值和均值。\n● *.output.*.npy 为溢出算子的输出数据的 npy文件。\n● *.output.*.npy 文件名下方展示的是文件中算子溢出的输出关键信息，包括数据格\n式，数据维度，数据类型，最大值，最小值和均值。\n----结束\n10.3 dump 数据文件 Format转换\n执行dump数据文件 Format转换\n本版本提供 dump数据文件 Format转换能力，用于用户根据自身需求将 AI处理器生成\n的dump数据文件转换成 numpy数据文件，方便查看。\n该功能通过 msaccucmp.py 脚本实现，脚本存放在 ${INSTALL_DIR}/tools/\noperator_cmp/compare ，${INSTALL_DIR} 请替换为 CANN软件安装后文件存储路径。\n以root用户安装为例，安装后文件默认存储路径为： /usr/local/Ascend/cann 。\n命令格式如下：\npython3 msaccucmp.py convert -d <dump_file>  [-out <output>] [-f <format>] [-s <shape>] [-o \n<output_tensor>] [-i <input_tensor>] [-c <custom_script_path>] [-v <version>] [-t <type>]\n命令格式参数项说明如 表10-2所示。\n表10-2 Format 转换参数项说明\n参数名 描述 是\n否\n必\n选\n-d\n--dump_fileAI处理器生成的 dump文件。\n支持指定单个文件；单个路径（不支持递归嵌套，只支持\n文件的父目录）；同时指定多个文件，文件名用逗号隔\n开，例如 -d /{PATH}/dump_file1,/{PATH}/dump_file2 。是\n-out\n--output转换后的数据存放目录，默认为当前路径。\n不建议配置与当前用户不一致的其它用户目录，避免提权\n风险。否\n-f\n--format●命令行包含 -f参数，表示进行 Format转换，指定转换后\n数据Format。如果 dump文件包含 original_shape 字\n段，则会根据 original_shape 对数据进行切片。支持的\nFormat转换类型参见 支持的 Format转换类型 。\n●命令行不包含 -f参数，表示进行 dump文件解析。否CANN社区版\n精度调试工具用户指南 10 扩展功能\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 74"
+    },
+    {
+      "page": 80,
+      "content": "参数名 描述 是\n否\n必\n选\n-s\n--shapeFormat转换需要的 Shape，当前仅 FRACTAL_NZ 转换需要\n配置该参数，格式为 ([0-9]+,)+[0-9]+ ，每个数字必须大\n于0。配置 -f时有效。否\n-o\n--output_tensor转换指定 index的output数据，与 -i互斥。配置 -f时有效。\n当-o与-i均未配置时，默认转换所有的 input与output。否\n-i\n--input_tensor转换指定 index的input数据，与 -o互斥。配置 -f时有效。 否\n-c\n--\ncustom_script_p\nath用户自定义 Format转换.py文件存放路径，需指定到\n“format_convert ”目录的上一层目录。 .py文件相关要求\n参见准备自定义 Format转换.py文件。配置 -f时有效。\n不建议调用与当前用户不一致的其它用户目录下的自定义\n脚本文件，避免提权风险。否\n-v\n--versiondump文件类型， 1代表protobuf 序列化后的数据文件， 2\n代表自定义格式的数据文件。默认值为 2。否\n-t\n--type输出文件的类型。取值为：\n● npy：输出文件保存为 numpy格式。\n● msnpy ：输出文件保存为 numpy格式，一般用于\nMindSpore 场景。\n● bin：输出文件保存为 binary格式。\n● pt：输出文件保存为 PyTorch Tensor （pt）格式。\n默认值为 npy。否\n \n支持的 Format转换类型\n结果保存为“原始文件名 .output.{index}.{shape}.npy ”或“原始文件名 .input.{index}.\n{shape}.npy ”，Shape的格式如： 1x3x224x224 。\n当前内置的 Format转换支持如下类型：\n● FRACTAL_NZ 转换NCHW\n● FRACTAL_NZ 转换成 NHWC\n● FRACTAL_NZ 转换ND\n● HWCN 转换FRACTAL_Z\n● HWCN 转换成 NCHW\n● HWCN 转换成 NHWC\n● NC1HWC0 转换成 HWCN\n● NC1HWC0 转换成 NCHWCANN社区版\n精度调试工具用户指南 10 扩展功能\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 75"
+    },
+    {
+      "page": 81,
+      "content": "● NC1HWC0 转换成 NHWC\n● NCHW 转换成 FRACTAL_Z\n● NCHW 转换成 NHWC\n● NHWC 转换成 FRACTAL_Z\n● NHWC 转换成 HWCN\n● NHWC 转换成 NCHW\n● NDC1HWC0 转换成 NCDHW\n说明\n一般情况下，非四维的 Format是由四维 Format转换而来，那么对于同一个非四维 Format支持转\n换成多种 Format类型的情况，该非四维 Format只有重新转回原始的四维 Format才有效。例如\nNC1HWC0 支持转换成 HWCN、NCHW、NHWC，但是被转换的 NC1HWC0 数据只有一种四维的\n原始数据，假设为 HWCN，那么该 NC1HWC0 数据只能转换成 HWCN。识别原始数据的 Format\n类型需要了解《 ATC离线模型编译工具 》中的“高级功能  > 单算子模型转换”。\n准备自定义 Format转换.py文件\n用户自定义的 Format转换.py文件只能用来进行 Format转换，文件安全性由用户自行\n保证。\n为满足用户自定义 Format转换，需要按以下要求准备：\n● .py文件命名需满足规则：“ convert_{format_from}_to_{format_to}.py ”，其\n中，format_from 和format_to 支持的类型如下：\n– NCHW\n– NHWC\n– ND\n– NC1HWC0\n– FRACTAL_Z\n– NC1C0HWPAD\n– NHWC1C0\n– FSR_NCHW\n– FRACTAL_DECONV\n– C1HWNC0\n– FRACTAL_DECONV_TRANSPOSE\n– FRACTAL_DECONV_SP_STRIDE_TRANS\n– NC1HWC0_C04\n– FRACTAL_Z_C04\n– CHWN\n– DECONV_SP_STRIDE8_TRANS\n– NC1KHKWHWC0\n– BN_WEIGHT\n– FILTER_HWCK\n– HWCN\n– LOOKUP_LOOKUPSCANN社区版\n精度调试工具用户指南 10 扩展功能\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 76"
+    },
+    {
+      "page": 82,
+      "content": "– LOOKUP_KEYS\n– LOOKUP_VALUE\n– LOOKUP_OUTPUT\n– LOOKUP_HITS\n– MD\n– NDHWC\n– C1HWNCoC0\n– FRACTAL_NZ\n– NCHDW\n● .py文件内容需满足以下规则：\ndef convert(shape_from, shape_to, array):\n    \n    return numpy_array\n表10-3 参数说明\n参数 说明\nshape_from array数据的转换前的 Shape，一维数组。\nshape_to array数据的转换后的 Shape，一维数组，可选。\narray 一维原始数据。\nreturn 返回值，返回转换后的 numpy数组。\n \n● .py文件存放目录需满足：\n.py文件必须存放在“ format_convert ”目录下，如果该目录不存在，需要新建。\n10.4 查看dump数据文件\ndump文件无法通过文本工具直接查看其内容，为了查看 dump文件内容，本文提供以\n下脚本将 dump文件转换为 numpy格式文件后，再通过 numpy官方提供的能力转为 txt\n文档进行查看。\n该功能通过 msaccucmp.py 脚本实现，脚本存放在 ${INSTALL_DIR}/tools/\noperator_cmp/compare ，${INSTALL_DIR} 请替换为 CANN软件安装后文件存储路径。\n以root用户安装为例，安装后文件默认存储路径为： /usr/local/Ascend/cann 。\npython3 msaccucmp.py convert -d <dump_file>  [-out <output>] [-v <version>] [-t <type>]\n命令格式参数项说明如 表10-4所示。CANN社区版\n精度调试工具用户指南 10 扩展功能\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 77"
+    },
+    {
+      "page": 83,
+      "content": "表10-4 参数说明\n参数名 描述 是\n否\n必\n选\n-d\n--dump_fileAI处理器生成的 dump文件。\n支持指定单个文件；单个路径（不支持递归嵌套，只支持文\n件的父目录）；同时指定多个文件，文件名用逗号隔开，例\n如-d /{PATH}/dump_file1,/{PATH}/dump_file2 。是\n-out\n--output转换后的数据存放目录，默认为当前路径。\n不建议配置与当前用户不一致的其它用户目录，避免提权风\n险。否\n-v\n--versiondump文件类型， 1代表protobuf 序列化后的数据文件， 2代\n表自定义格式的数据文件。默认取值为 2。否\n-t\n--type输出文件的类型。取值为：\n● npy：输出文件保存为 numpy格式。 npy文件不支持\nbfloat16 格式，若工具输入源文件为 bfloat16 格式，则会\n将其解析为 float32格式的 npy文件。\n● msnpy ：输出文件保存为 numpy格式，一般用于\nMindSpore 场景。\n● bin：输出文件保存为 binary格式。\n默认值为 npy。否\n \n操作步骤\n步骤1使用安装用户登录开发环境。\n步骤2进入${INSTALL_DIR}/tools/operator_cmp/compare ，${INSTALL_DIR} 请替换为 CANN\n软件安装后文件存储路径。以 root用户安装为例，安装后文件默认存储路径为： /usr/\nlocal/Ascend/cann 。\n步骤3执行msaccucmp.py 脚本，转换 dump数据文件为 numpy格式文件。\npython3 msaccucmp.py convert -d $HOME/dump  -out $HOME/dumptonumpy  -v 2\n说明\n● msaccucmp.py 脚本的各个输入参数使用方法，请参见 10.3 dump 数据文件 Format转换。\n● -d参数支持传入单个文件，对单个 dump文件进行转换，也支持传入目录（不支持递归嵌\n套，只支持文件的父目录），对整个 path下所有的 dump文件进行转换。\n步骤4调用Python，转换 numpy文件为 txt文件。举例：\n$ python3\nPython 3 (default, Mar  5 2020, 16:07:54)[GCC 5.4.0 20160609] on linuxType \"help\", \"copyright\", \"credits\" \nor \"license\" for more information.\n>>> import numpy as np\n>>> a = np.load(\"$HOME/dumptonumpy/Pooling.pool1.1.1147.1589195081588018.output.0.npy\")\n>>> b = a.flatten()\n>>> np.savetxt(\"$HOME/dumptonumpy/Pooling.pool1.1.1147.1589195081588018.output.0.txt\", b)CANN社区版\n精度调试工具用户指南 10 扩展功能\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 78"
+    },
+    {
+      "page": 84,
+      "content": "转换为 .txt格式文件后，维度信息、 dtype均不存在。详细的使用方法请参见 NumPy官\n网介绍。\n----结束\n10.5 GPU/NPU 映射表获取\n说明\n本节涉及的 .json文件、目录等名称均为举例，请根据实际环境替换。其中， -out指定\n的结果存放路径，需确保操作用户具有读写权限。\n操作步骤\n步骤1以HwHiAiUser 用户登录开发环境。\n步骤2生成json文件。\natc --mode= 1 --om= $HOME/data/resnet50.om  --json= $HOME/data/resnet50.json\n步骤3进入${INSTALL_DIR}/tools/operator_cmp/compare ，${INSTALL_DIR} 请替换为 CANN\n软件安装后文件存储路径。以 root用户安装为例，安装后文件默认存储路径为： /usr/\nlocal/Ascend/cann 。\n步骤4执行获取 GPU/NPU 的映射表命令。\n说明\n由于dump和npy比对数据文件是由多个文件组成，故下文操作步骤中 -m和-g参数须指定数据文\n件所在的父目录。如： $HOME/MyApp/resnet50 ，其中resnet50 文件夹下直接保存比对数据文\n件。\n目录结构示例如下：\nroot@xxx:$HOME/MyApp/resnet50# tree\n.\n├── BatchMatMul.bert_encoder_layer_0_attention_self_MatMul_1.24.1614717261785536\n├── BatchMatMul.bert_encoder_layer_0_attention_self_MatMul.21.1614717261768864\n├── BatchMatMul.bert_encoder_layer_10_attention_self_MatMul_1.235.1614717263664916\n# 仅为示例，此处省略剩余文件名。\npython3 msaccucmp.py compare -m $HOME/MyApp_mind/resnet50  -g $HOME/Standard_caffe/resnet50  -f \n$HOME/data/resnet50.json  -out $HOME/result  -map\n输出结果为 mapping_*.csv 文件内容如 图10-2所示。\n图10-2 GPU/NPU 的映射表\n表10-5 输出参数说明\n参数 说明\nIndex 算子的 ID。CANN社区版\n精度调试工具用户指南 10 扩展功能\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 79"
+    },
+    {
+      "page": 85,
+      "content": "参数 说明\nOpType 算子类型。指定 -f，-cf或-q参数时获取算子类型。\nNPUDump 表示基于 AI处理器运行生成的 dump数据的算子名。\nGroundTruth 表示基于 GPU/CPU 运行生成的 npy或dump数据的算子名。\nTensorIndex 表示基于 AI处理器运行生成的 dump数据的算子的 input ID和\noutput ID 。\nNPUDumpPath 表示基于 AI处理器运行生成的 dump文件路径。\nGroundTruthPa\nth表示基于 GPU/CPU 运行生成的 npy或dump文件路径。\n \n----结束\n10.6 自定义算法 .py文件准备\n用户自定义的比对算法 Python文件只能用来进行精度比对，文件安全性和传入参数的\n安全性由用户保证。\n用户自定义算法，需要在 .py格式文件内写好自定义算法脚本，按以下要求准备：\n● .py文件命名需满足规则：“  alg_{algorithm_name}.py ”，其中，\nalgorithm_name 为算法名。\n● .py文件内容需满足以下规则：\ndef compare(my_output_dump_data, ground_truth_dump_data, args):   # 算法固定头格式\n#以下为算法示例\n    \"\"\"\n    Function Description:\n        compare the my output dump data and the ground truth dump data by algorithm\n    Parameter:\n        my_output_dump_data: the my output dump data\n        ground_truth_dump_data: the ground truth dump data\n        args: the algorithm arguments\n    Return Value:\n        the compare algorithm value, string; error_msg, string\n    \"\"\"\n表10-6 参数说明\n参数 说明\nmy_output_dump_data my output dump 数据，一维数组。\nground_truth_dump_dat\naground truth dump 数据，一维数组。\nargs 算法参数，用户自行解析。\nReturn Value 返回值，包括：\n●算法比对的结果， String格式。\n●错误信息， String格式。\n CANN社区版\n精度调试工具用户指南 10 扩展功能\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 80"
+    },
+    {
+      "page": 86,
+      "content": "●需要在当前用户的目录下创建“ algorithm ”目录用于保存 .py文件，请确保用户对\n目录和文件具有读写权限。\n10.7 AICPU 自定义算子日志解析\n概述\ndump数据文件解析功能通过解析 dump数据文件，获取 dump数据文件中的信息。\n当前该功能支持从 dump数据文件中解析 AICPU自定义算子的日志，并将其保存到日志\n文件内。\n命令格式说明\npython3 dump_parser.py save_log -d <dump_file>  [-out <output>]\n命令行参数说明如 表10-7所示。\n该功能通过 dump_parser.py 脚本实现，脚本存放在 ${INSTALL_DIR}/tools/\noperator_cmp/compare ，${INSTALL_DIR} 请替换为 CANN软件安装后文件存储路径。\n以root用户安装为例，安装后文件默认存储路径为： /usr/local/Ascend/cann 。\n表10-7 命令行参数说明\n参数名 参数说明 是否必\n选\n-d\n--dump_file待解析的 dump数据文件。 是\n-out\n--outputAICPU自定义算子的日志存放目录。默认\n为当前目录。\n结果文件名格式为： dump_file_name.\n{index}.log\n不建议配置与当前用户不一致的其它用户\n目录，避免提权风险。否\n \n操作步骤\n步骤1登录CANN工具安装环境。\n步骤2进入${INSTALL_DIR}/tools/operator_cmp/compare ，${INSTALL_DIR} 请替换为 CANN\n软件安装后文件存储路径。以 root用户安装为例，安装后文件默认存储路径为： /usr/\nlocal/Ascend/cann 。\n步骤3执行save_log 解析命令。\npython3 dump_parser.py save_log -d my_dump_path/dump_file  -out /MyApp20/out\n命令执行完成后在 -out指定目录下生成日志文件。\n----结束CANN社区版\n精度调试工具用户指南 10 扩展功能\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 81"
+    },
+    {
+      "page": 87,
+      "content": "10.8 生成npy文件名异常情况批量处理\nTensorFlow 模型生成 dump数据时，因 tfdbg自身原因或运行环境原因，会出现 tfdbg截\n断算子名，导致生成的 npy文件名与预期不符，造成转换 dump数据文件异常。\n需要参考以下方法重新生成 npy文件，使得 npy文件名符合精度比对要求。\n说明\n●本文中脚本名称、路径等均为举例，请根据实际替换。\n●批量处理后，如果遇到某算子的 dump文件存在，但是比对结果为 NaN，需要检查该算子的\ndump文件名中的 {op_name} 是否与 TensorFlow 算子名称一致，如果不一致需要手动修改\ndump文件名中的算子字段与 TensorFlow 算子名称一致。其中如果出现 \"/\"请修改为 \"_\"。\n步骤1执行TensorFlow 工程。\n进入调试命令行交互模式后，输入 run命令。\n步骤2执行lt > tensor_name 命令将所有 tensor的名称暂存到文件里。\n步骤3创建可执行脚本，如 pt_cmd.sh ，获取 tensor_name 文件中 tensor_name 对应的\ntensor_index 。\n脚本内容如下：\n#!/bin/bash\ntimestamp=$[$(date +%s%N)/1000]\nindex=1\nwhile read -r line\ndo\n  tensor_index=`echo $line | awk '{print $4}'`\n  echo \"pt \"$tensor_index\" -n 0 -w \"$((index++))\".\"$timestamp\".npy\" >> $2\ndone < $1\n赋予pt_cmd.sh 可执行权限并执行脚本。\nbash pt_cmd.sh tensor_name tensor_name.txt\n步骤4回到tfdbg命令行，输入 run命令后，将上一步生成的 tensor_name.txt 文件内容粘贴执\n行，生成 npy文件。\n步骤5将生成的 npy文件，移动到新的文件夹，如 npy_dir。\n步骤6创建可执行脚本，如 index_to_tensorname.sh ，并执行脚本批量修改 npy文件名。\n脚本内容如下：\n#!/bin/bash\ntimestamp=$[$(date +%s%N)/1000]\nwhile read -r line\ndo\n  tensor_index=`echo $line | awk '{print $2}'`\n  real_file=`echo  $line | awk '{print $6}'`\n  changed1_tensor_index=${tensor_index//\\//_}\n  changed2_tensor_index=${changed1_tensor_index//:/.}\n  echo $2/$real_file  $2/$changed2_tensor_index\".\"$timestamp\".npy\"\n  if [ -r $2/$real_file  ]\n  then\n    mv $2/$real_file  $2/$changed2_tensor_index\".\"$timestamp\".npy\"\n  fi\ndone < $1\n赋予index_to_tensorname.sh 可执行权限并执行脚本。CANN社区版\n精度调试工具用户指南 10 扩展功能\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 82"
+    },
+    {
+      "page": 88,
+      "content": "bash index_to_tensorname.sh tensor_name.txt npy_dir\n----结束\n10.9 Windows dump 文件转换为 Linux dump 文件\n步骤1在Linux上准备转换脚本 windows_to_linux.py ，内容如下。\nimport argparse\nimport os\nimport sys\nclass WindowsToLinux:\n    \"\"\"\n    The class for format windows to linux\n    \"\"\"\n    def __init__(self):\n        parse = argparse.ArgumentParser()\n        parse.add_argument(\"-i\", dest=\"windows_dump_path\", default=\"\",\n                           help=\"<Required> the dump file path\", required=True)\n        parse.add_argument(\"-o\", dest=\"output_path\", default=\"\",\n                           help=\"<Required> the output path\", required=True)\n        args, _ = parse.parse_known_args(sys.argv[1:])\n        self.windows_dump_path = os.path.realpath(args.windows_dump_path)\n        self.output_path = os.path.realpath(args.output_path)\n    def windows_to_linux(self, dump_path):\n        try:\n            with open(dump_path, \"rb\") as dump_file:\n                content = dump_file.read()\n                new_content = content.replace(b\"\\r\\n\", b\"\\n\")\n                output_file_path  = os.path.join(self.output_path, os.path.basename(dump_path))\n                with open(output_file_path,  \"wb\") as new_dump_file:\n                    new_dump_file.write(new_content)\n                    print('Info: convert dump to linux for \"%s\" successfully.' % dump_path)\n        except (OSError, IOError, MemoryError, SystemError) as error:\n            print('Error: convert windows dump file \"%s\" to linux dump file failed. %s' % (dump_path, error))\n    def convert(self):\n        try:\n            if not os.path.exists(self.windows_dump_path) and \\\n                    not os.access(self.windows_dump_path, os.R_OK):\n                print('Error: the path \"%s\" does not exist or is not readable.')\n                sys.exit()\n            if not os.path.exists(self.output_path):\n                os.makedirs(self.output_path)\n            if not os.path.exists(self.output_path) and \\\n                    not os.access(self.output_path, os.W_OK):\n                print('Error: the path \"%s\" does not exist or can not writable.')\n                sys.exit()\n            if os.path.isfile(self.windows_dump_path):\n                self.windows_to_linux(self.windows_dump_path)\n            else:\n                for file_name  in os.listdir(self.windows_dump_path):\n                    self.windows_to_linux(os.path.join(self.windows_dump_path, file_name))\n        except (OSError, IOError, MemoryError, SystemError) as error:\n            print('Error: convert windows dump file to linux dump file failed. %s' % error)\n            sys.exit()\nif __name__ == \"__main__\":\n    main = WindowsToLinux()\n    main.convert()CANN社区版\n精度调试工具用户指南 10 扩展功能\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 83"
+    },
+    {
+      "page": 89,
+      "content": "步骤2将Windows 的dump文件拷贝到 Linux某个目录下。\n步骤3在Linux上执行转换脚本。\n# windows_dump_path 是步骤 2中Windows 的dump文件拷贝到 Linux的目录\n# linux_dump_path 是生成的 Linux的dump文件存放路径\npython3 windows_to_linux.py -i {windows_dump_path}  -o {linux_dump_path}\n----结束CANN社区版\n精度调试工具用户指南 10 扩展功能\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 84"
+    },
+    {
+      "page": 90,
+      "content": "11  附录\n11.1 数据格式要求\n11.2 命令格式说明\n11.3 完整比对结果参数说明\n11.4 原compare_vector.py 精度比对方式\n11.1 数据格式要求\nmsaccucmp.py 脚本精度比对工具支持多种比对方式，因此 dump、npy文件命名需满\n足以下要求：CANN社区版\n精度调试工具用户指南 11 附录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 85"
+    },
+    {
+      "page": 91,
+      "content": "表11-1 数据文件命名规则\n数据类型 数据命名格式 备注\n非量化离线模型在 AI处\n理器上运行生成的 dump\n数据文件{op_type}.{op_name}.\n{task_id}.{stream_id}.\n{timestamp}\n当前包含如下三种文件名格\n式：\n●{op_type}.{op_name}.\n{task_id}.{stream_id}.\n{timestamp}\n●{op_type}.\n{op_name_lxsliceN}.\n({stream_id}.){task_id}.\n{timestamp}.\n{task_type}.\n{context_id}.\n{thread_id}.{device_id}\n●{op_type}.{op_name}.\n({stream_id}.){task_id}.\n{timestamp}.\n{task_type}.\n{context_id}.\n{thread_id}.{device_id}命名格式说明：\n● op_type （算子类\n型）、 op_name （算子\n名）对应的名称需满足\n“A-Za-z0-9_- ”正则表\n达式规则。\n● timestamp 为16位时间\n戳。\n● task_id （任务 ID）、\nstream_id （Stream\nID）、output_index\n（第N个输出）、\ntask_type （任务类\n型）、 context_id\n（Context ID ）、\nthread_id （线程 ID）、\ndevice_id （运行卡的\nDevice ID ）为0~9数字\n组成。\n如果op_type、op_name 出\n现了“ .”、“ /”、\n“\\”、空格时，转换为下\n划线表示。量化离线模型在 AI处理\n器上运行生成的 dump数\n据文件\nnpy文件（Caffe、\nTensorFlow 或ONNX）{op_name}.\n{output_index}.\n{timestamp} .npy\n \n11.2 命令格式说明\n通用参数\n精度比对命令行格式如下：\npython3 msaccucmp.py compare -m <my_dump_path> -g <golden_dump_path> [-f <fusion_rule_file>]  [-cf \n<close_fusion_rule_file>]  [-q <quant_fusion_rule_file>]  [-out <output>] [-map] [-c <custom_script_path>] [-\nalg <algorithm>] [-v <version>] [-r <range>] [-overflow_detection]  [-max] [-advisor]\n命令行参数说明如 表11-2所示。CANN社区版\n精度调试工具用户指南 11 附录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 86"
+    },
+    {
+      "page": 92,
+      "content": "表11-2 精度比对命令行参数说明\n参数名 参数说明 是否\n必选\n-m\n--\nmy_dump_pat\nh基于AI处理器运行生成的数据文件所在目录。\n由于dump数据文件是多个二进制文件，故须指定 dump数\n据文件所在的父目录。如： $HOME/MyApp_mind/\nresnet50 ，其中resnet50 文件夹下直接保存 dump数据文\n件。\n训练场景下：\n●支持TensorFlow 为原始训练网络的比对。\n●单个数据文件比对时，需指定数据文件所在的具体目\n录。\n●支持多个 dump数据文件的批量比对，可指定固定路径\n为dump_path/time/ ，仅支持 TensorFlow 为原始训练\n网络的比对。指定的路径下可以存放多个 dump数据文\n件，但要求每个 dump数据文件拥有唯一路径，且路径\n命名规则为 dump_path/time/device_id/model_name/\nmodel_id/dump_step/dump 文件。是\n-g\n--\ngolden_dump_\npath基于GPU/CPU 运行生成的原始网络数据文件所在目录。\n由于npy文件是多个文件，故须指定 npy文件所在的父目\n录。如：$HOME/Standard_caffe/resnet50  ，其中\nresnet50 文件夹下直接保存 npy数据文件。\n当指定 -cf参数时，该参数指定的就是模型转换关闭算子融\n合功能下 dump数据文件的目录。是\n-f\n--\nfusion_rule_fil\ne全网层信息文件。\n推理场景下：\n●通过使用 ATC转换.om模型文件生成的 json文件，文件\n包含整网算子的映射关系。\n●该参数指定的是默认开启算子融合功能情况下进行模\n型转换时生成的 json文件；指定关闭算子融合功能情况\n下进行模型转换时生成的 json文件使用 -cf参数。\n训练场景下：\n●通过使用 ATC转换.txt图文件生成的 json文件。\n●单个数据文件比对时，该参数需指定具体的 json文件；\n批量比对时，该参数可指定为多个 json文件所在的目\n录。否\n-cf\n--\nclose_fusion_r\nule_file全网层信息文件（通过使用 ATC转换.om模型文件生成的\njson文件，文件包含关闭算子融合功能情况下整网算子的\n映射关系）。\n本参数详细使用指导请参见 7.4 比对操作和分析 。\n仅推理场景支持本参数。否CANN社区版\n精度调试工具用户指南 11 附录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 87"
+    },
+    {
+      "page": 93,
+      "content": "参数名 参数说明 是否\n必选\n-q\n--\nquant_fusion_r\nule_file量化信息文件（ 昇腾模型压缩输出的 json文件）。\n通过AMCT量化生成的量化信息文件（ *.json），文件包含\n整网量化算子映射关系，用于精度比对时算子匹配。\nCaffe非量化原始模型  vs 量化离线模型场景时，与 -f参数\n二选一；Caffe非量化原始模型  vs 量化原始模型场景时，\n仅使用本参数。\n仅推理场景支持本参数。否\n-out\n--output比对数据结果存放路径，默认为当前路径。\n不建议配置与当前用户不一致的其它用户目录，避免提权\n风险。\n训练场景下：\n●单个数据文件比对时，结果文件名格式为\nresult_{timestamp}.csv 。\n●多个数据文件比对时，结果文件名格式为\n{device_id}_{model_name}_{dump_step}_result_{tim\nestamp}.csv ，批量比对将生成多个 csv结果文件。否\n-map\n--mapping输出GPU/NPU 的映射表。\n一般情况下 GPU/NPU 的映射表需要在完成精度比对之\n后，才能从 csv中获取。本参数实现在精度比对前，直接\n提取GPU/NPU 的映射表。建议在比对数据量太大，需要\n提前获取 GPU/NPU 的映射表的场景下使用。详细操作请\n参见10.5 GPU/NPU 映射表获取 。否\n-c\n--\ncustom_script_\npath用户自定义脚本文件存放路径，包括自定义算法 .py文件和\n自定义 Format转换.py文件，需指定到脚本目录的上一层\n目录。指定本参数时判断是否存在以下文件目录：\n●存在自定义算法 .py文件目录，目录格式为\n“algorithm ”，则读取“ algorithm ”目录下的自定义\n算法.py文件，生成自定义算法，可通过 -alg参数指定\n为比对算法。自定义算法 .py文件相关要求参见 10.6 自\n定义算法 .py文件准备 。\n●存在自定义 Format转换.py文件目录，目录格式为\n“format_convert ”，则读取“ format_convert ”目录\n下的自定义 Format转换.py文件。自定义 Format转\n换.py文件相关要求参见 准备自定义 Format转换.py文\n件。\n不建议调用与当前用户不一致的其它用户目录下的自定义\n脚本文件，避免提权风险。否CANN社区版\n精度调试工具用户指南 11 附录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 88"
+    },
+    {
+      "page": 94,
+      "content": "参数名 参数说明 是否\n必选\n-alg\n--algorithm比对算法维度，取值为：\n● 0：CosineSimilarity ，表示余弦相似度算法。\n● 1：MaxAbsoluteError ，表示最大绝对误差算法。\n● 2：AccumulatedRelativeError ，表示累积相对误差算\n法。\n● 3：RelativeEuclideanDistance ，表示欧氏相对距离算\n法。\n● 4：KullbackLeiblerDivergence ，表示 KL散度算法。\n● 5：StandardDeviation ，表示标准差算法。\n● 6：MeanAbsoluteError ，表示平均绝对误差。\n● 7：RootMeanSquareError ，表示均方根误差。\n● 8：MaxRelativeError ，表示最大相对误差。\n● 9：MeanRelativeError ，表示平均相对误差。\n● all：比对全部算法（包含自定义和内置算法）， all为\n默认值。\n●自定义算法名（ algorithm_name ）。具体算法名由自\n定义算法文件确定，例如自定义算法文件名为\nalg_RelativeError.py ，则自定义算法名为\nRelativeError 。须同时配置 -c参数。\n可多选，配置格式为各取值间用逗号分隔，可配置为数字\n或算法名，例如 0,1,2,RelativeError 。\n若只选择比对部分维度，则比对结果同样只展示对应维\n度。否\n-a\n--\nalgorithm_opti\nons比对算法的高级选项，可为指定的算法设置参数，指定的\n算法必须是 -alg参数的内置算法或者 -c参数的自定义算\n法，被本参数设置后的算法以本参数设置的值执行运算。\n输入格式为：算法名 :参数名 =值,参数名 =值;算法名 :参数名\n=值,参数名 =值。参数之间是逗号分隔，不同算法是分号\n分隔，例如：\n\"CosineSimilarity:max=1,min=0;aa:max=1,min=0\" 。其\n中算法名与 -c参数自定义算法 .py文件的 algorithm_name\n（参见 10.6 自定义算法 .py文件准备 ）一致。否\n-v\n--versiondump文件类型， 1代表protobuf 序列化后的数据文件， 2\n代表自定义格式的数据文件。默认取 2。否CANN社区版\n精度调试工具用户指南 11 附录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 89"
+    },
+    {
+      "page": 95,
+      "content": "参数名 参数说明 是否\n必选\n-r\n--range设定算子比对范围。配置方式如下：\n● start：第一个比对的算子，取值范围为 [1, 参与计算的\n算子个数 ]，默认值为 1。\n● end：最后一个比对的算子，取值范围为 -1或[start, 参\n与计算的算子个数 ]，默认值为 -1（动态获取网络模型\n中最后一个参与计算的算子）。\n● step：第start+step*n 个比对的算子， step取值范围为\n[1, 参与计算的算子个数 )，默认值为 1，n为从1开始的\n正整数。\n配置格式为：“ start,end,step ”。比如： -r 1,101,20 ，表\n示算子 1,21,41,61,81,101 的Tensor参与比对。\n不配置本参数时，比对网络模型中的所有参与计算的算\n子。\nCaffe非量化原始模型  vs 量化原始模型和 NPU vs NPU 精\n度比对场景不支持配置本参数。\n须先配置 -f或-cf参数指定离线模型全网层信息文件。\n-s参数与 -r参数二者只能选择一个配置。否\n-s\n--select设定算子比对范围。通过指定算子的索引（网络模型中算\n子的ID）来选择需要比对的算子，格式为： -s 1,2,3（数值\n之间以逗号隔开，取值与网络模型中算子的 ID有关）。\n须先配置 -f或-cf参数指定离线模型全网层信息文件。\n-s参数与 -r参数二者只能选择一个配置。否\n-max\n--\nmax_cmp_size设置每个 dump数据比对的最大字节数，用于精度比对过\n程提速，默认 0（表示全量比对），单位 Byte。当模型中\n算子的输出存在较大 Shape时、比对过于耗时，可以尝试\n配置。否\n-\noverflow_dete\nction整网算子溢出检测。进行整网比对时可检测溢出算子。\n默认未开启算子溢出检测。\n当算子的 Tensor数据类型是 FP16时，tensor中的任意一个\n数值的绝对值  >= 65504 ，认为算子溢出。\nCaffe非量化原始模型  vs 量化原始模型场景配置本参数不\n生效。否\n-advisor 在Tensor比对结束后，针对比对结果进行数据分析，给出\n专家建议。否\n \n单算子比对\n单算子比对命令行格式如下 :\npython3 msaccucmp.py compare -m <my_dump_path> -g <golden_dump_path> [-f <fusion_rule_file>]  [-cf \n<close_fusion_rule_file>]  [-q <quant_fusion_rule_file>]  [-out <output>] [-op <op_name>] [-o \n<output_tensor>] [-i <input_tensor>] [-c <custom_script_path>] [-v <version>] [-n <topn>] [--\nignore_single_op_result] [-ml <max_line>] [-overflow_detection]CANN社区版\n精度调试工具用户指南 11 附录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 90"
+    },
+    {
+      "page": 96,
+      "content": "命令行参数说明如 表11-3所示。\n表11-3 单算子比对命令行参数说明\n参数名 参数说明 是\n否\n必\n选\n-op\n--op_name单算子比对的算子名。输入待比对算子名，算子名获取方式\n有：\n●推理场景下：\n–从.om模型中获取。\n–从使用 ATC转换.om模型文件生成的 json文件中获取。\n–从整网比对结果文件中的 NPUDump 字段获取。\n●训练场景下：\n–直接从训练模型中获取。\n–从计算图文件（ *.txt）中获取。\n–从整网比对结果文件中的 NPUDump 字段获取。是\n-o\n--\noutput_tenso\nr比对指定 Index的output数据。\n配置格式： -o Index，其中 Index可以从整网比对结果文件中\n的TensorIndex 字段的 output取值获取，例如 TensorIndex 为\ntrans_Cast_0:input:0 ，则Index为0。\n当-o与-i均未配置时，默认比对 output数据的 Index为0的数\n据。\n配置-op时有效，与 -i参数互斥。否\n-i\n--\ninput_tensor比对指定 Index的input数据。\n配置格式： -i Index，其中 Index可以从整网比对结果文件中\n的TensorIndex 字段的 input取值获取，例如 TensorIndex 为\ntrans_Cast_0:input:0 ，则Index为0。\n配置-op时有效，与 -o参数互斥。否\n-n\n--topn仅展示绝对误差和相对误差的前 n条数据，比对完成后打印并\n生成csv结果文件，取值范围为 [1,10000] ，默认值为 20。配\n置-op时有效。\n生成的 csv结果文件名分别为：\n●绝对误差： {op_name}_{input/\noutput}_{index}_absolute_error_topn.csv\n●相对误差： {op_name}_{input/\noutput}_{index}_relative_error_topn.csv否\n--\nignore_single\n_op_resultcsv结果文件中不生成单算子比对的完整比对数据，即不生成\n完整比对结果的 csv文件。配置 -op时有效。\n不配置本参数时，生成完整比对结果。否CANN社区版\n精度调试工具用户指南 11 附录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 91"
+    },
+    {
+      "page": 97,
+      "content": "参数名 参数说明 是\n否\n必\n选\n-ml\n--max_line单算子比对时生成的单个 csv文件所包含最大的文件条数，取\n值范围为 [10000,1000000] ，默认值为 1000000 。\n文件中单算子的比对结果数据条数较大时，配置本参数可以\n将csv文件拆分为多个文件。比如数据条数为 100000条，配\n置本参数为 10000，那么比对结果则输出 10个csv文件。\n配置-op时有效，但配置 --ignore_single_op_result 时，本参\n数不生效。否\n \n11.3 完整比对结果参数说明\n表11-4 完整比对结果参数说明\n参数 说明\nIndex 网络模型中算子的 ID。\nOpSequence 部分算子比对时算子运行的序列。即 -f参数指定的全网层信息文件\n中算子的 ID。仅配置 -r或-s参数时展示。\nOpType 算子类型。指定 -f参数时获取算子类型。\nNPUDump 表示My Output 模型的算子名。\nDataType 表示NPU侧dump数据的算子数据类型。\nAddress dump tensor 的内存地址。用于判断算子的内存问题。仅基于 AI处\n理器运行生成的 dump数据文件在整网比对时可提取该数据。\nGroundTruth 表示Ground Truth 模型的算子名。\nDataType 表示Ground Truth 侧数据算子的数据类型。\nTensorIndex 表示基于 AI处理器运行生成的 dump数据的算子的 input ID和\noutput ID 。\nShape 比对的 Tensor的Shape。\nOverFlow 溢出算子。显示 YES表示该算子存在溢出；显示 NO表示算子无溢\n出；显示 NaN表示不做溢出检测。配置 -overflow_detection 参数\n时展示。\nCosineSimilari\nty进行余弦相似度算法比对出来的结果，取值范围为 [-1,1]，比对的\n结果如果越接近 1，表示两者的值越相近，越接近 -1意味着两者的\n值越相反。\nMaxAbsoluteE\nrror进行最大绝对误差算法比对出来的结果，取值范围为 0到无穷大，\n值越接近于 0，表明越相近，值越大，表明差距越大。CANN社区版\n精度调试工具用户指南 11 附录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 92"
+    },
+    {
+      "page": 98,
+      "content": "参数 说明\nAccumulatedR\nelativeError进行累积相对误差算法比对出来的结果，取值范围为 0到无穷大，\n值越接近于 0，表明越相近，值越大，表明差距越大。\nRelativeEuclid\neanDistance进行欧氏相对距离算法比对出来的结果，取值范围为 0到无穷大，\n值越接近于 0，表明越相近，值越大，表明差距越大。\nKullbackLeible\nrDivergence进行KL散度算法比对出来的结果，取值范围为 0到无穷大。 KL散度\n越小，真实分布与近似分布之间的匹配越好。\nStandardDevi\nation进行标准差算法比对出来的结果，取值范围为 0到无穷大。标准差\n越小，离散度越小，表明越接近平均值。\nMeanAbsolute\nError表示平均绝对误差。取值范围为 0到无穷大， MeanAbsoluteError\n趋于0，RootMeanSquareError 趋于0，说明测量值与真实值越近\n似；MeanAbsoluteError 趋于0，RootMeanSquareError 越大，说\n明存在局部过大的异常值； MeanAbsoluteError 越大，\nRootMeanSquareError 等于或近似 MeanAbsoluteError ，说明整体\n偏差越集中； MeanAbsoluteError 越大， RootMeanSquareError 越\n大于MeanAbsoluteError ，说明存在整体偏差，且整体偏差分布分\n散；不存在以上情况的例外情况，因为 RootMeanSquareError ≥\nMeanAbsoluteError 恒成立。\nRootMeanSqu\nareError表示均方根误差。取值范围为 0到无穷大， MeanAbsoluteError 趋\n于0，RootMeanSquareError 趋于0，说明测量值与真实值越近\n似；MeanAbsoluteError 趋于0，RootMeanSquareError 越大，说\n明存在局部过大的异常值； MeanAbsoluteError 越大，\nRootMeanSquareError 等于或近似 MeanAbsoluteError ，说明整体\n偏差越集中； MeanAbsoluteError 越大， RootMeanSquareError 越\n大于MeanAbsoluteError ，说明存在整体偏差，且整体偏差分布分\n散；不存在以上情况的例外情况，因为 RootMeanSquareError ≥\nMeanAbsoluteError 恒成立。\nMaxRelativeEr\nror表示最大相对误差。取值范围为 0到无穷大，值越接近于 0，表明\n越相近，值越大，表明差距越大。\nMeanRelative\nError表示平均相对误差。取值范围为 0到无穷大，值越接近于 0，表明\n越相近，值越大，表明差距越大。\nCompareFailR\neason算子无法比对的原因。\n若余弦相似度为 1，则查看该算子的输入或输出 Shape是否为空或\n全部为 1，若为空或全部为 1则算子的输入或输出为标量，提示：\nthis tensor is scalar 。\n \n11.4 原compare_vector.py 精度比对方式\n11.4.1 比对数据准备CANN社区版\n精度调试工具用户指南 11 附录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 93"
+    },
+    {
+      "page": 99,
+      "content": "11.4.1.1 数据格式要求\n说明\ncompare_vector.py 精度比对工具将在后续版本下线，当前版本推荐使用上文中的 msaccucmp.py\n工具。\n当前版本支持多种比对方式，因此，对 dump、npy文件命名有以下明确要求，准备数\n据时需要遵循。\n表11-5 数据文件命名规则\n数据类型 数据命名格式\n非量化原始模型的 dump数据(Caffe) {op_name}.{output_index}.{timestamp} .pb\n量化原始模型的 dump数据(Caffe) {op_name}.{output_index}.\n{timestamp} .quant\n非量化离线模型在 AI处理器上运行生\n成的dump数据{op_type}.{op_name}.{task_id}.\n{timestamp}\n量化离线模型在 AI处理器上运行生成\n的dump数据{op_type}.{op_name}.{task_id}.\n{timestamp}\n非量化原始模型的 dump数据\n(TensorFlow){op_name}.{output_index}.{timestamp} .pb\nnpy文件(Caffe或TensorFlow) {op_name}.{output_index}.\n{timestamp} .npy\n \n命名格式说明： op_type、op_name 对应的名称需满足“ A-Za-z0-9_- ”正则表达式规\n则，timestamp 为16位时间戳， output_index 、task_id为0~9数字组成。\n11.4.1.2 准备离线模型 dump数据文件\n前提条件\n在准备 dump数据前，请参见《 ATC离线模型编译工具 》模型转换，准备好模型文件；\n如果涉及模型量化，请参见《 AMCT模型压缩工具 》完成量化操作后再进行模型转\n换，生成量化的模型文件。并请配套生成的模型文件完成应用工程的编译、运行，确\n保工程正常。\n说明\n●执行AMCT时，同步会生成量化融合规则文件，该文件在精度比对时会使用。\n● Docker 场景下，不支持将容器作为运行环境使用 dump功能。\n●提供aclInit() 接口和 aclmdlSetDump() 接口两种接口方式 dump数据。\n● aclInit() 接口的详细使用方法请参见《 应用开发  (C&C++) 》中的“ aclInit”。\n● aclmdlSetDump() 接口的详细使用方法请参见“ aclmdlSetDump ”。CANN社区版\n精度调试工具用户指南 11 附录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 94"
+    },
+    {
+      "page": 100,
+      "content": "dump数据\n参考以下步骤进行离线模型 dump操作：\n步骤1打开工程文件，查看调用的 aclInit() 或aclmdlSetDump() 函数，获取 acl.json文件路\n径。\n说明\n如果aclInit()或aclmdlSetDump() 初始化为空，则需要修改该函数，补充 步骤2创建的 acl.json路\n径。这里的 acl.json路径是相对工程编译生成的二进制文件的路径。\n步骤2在查到的目录下修改 acl.json文件（如不存在，则需要新建，建议放在工程编译后的\nout目录下），添加 dump配置，格式如下所示。\n{                                                                                            \n    \"dump\":{                                                                                 \n        \"dump_list\":[                                                                        \n            {    \"model_name\":\"ResNet-101\"\n            },\n            {                                                                                \n                \"model_name\":\"ResNet-50\",\n                \"layer\":[\n                      \"conv1conv1_relu\",\n                      \"res2a_branch2ares2a_branch2a_relu\",\n                      \"res2a_branch1\",\n                      \"pool1\"\n                ]\n            }\n        ],  \n        \"dump_path\":\"/home/output\",\n                \"dump_mode\":\"output\",\n        \"dump_op_switch\":\"off\"\n    }                                                                                        \n}\nacl.json文件配置 dump规则说明：\n●样例中的 dump、dump_list 、dump_path 为必选字段； model_name 、layer、\ndump_mode 、dump_op_switch 为可选字段。\n●当需要 dump模型的所有算子时，不需要包含 layer字段。\n●当需要 dump指定的部分算子时，按格式配置 layer字段，每行配置模型中的一个\n算子名，且每个算子之间用英文逗号隔开。\n●如果存在多个模型需要 dump，则需要为每个模型创建 dump配置，且每个模型之\n间用英文逗号隔开。\n●如果仅 dump单算子模型时，则 dump_list 为空， dump_op_switch 配置为 on。\nacl.json文件配置项说明：\n● dump_list ：需要 dump数据的整网模型列表。\n– model_name ：模型名称。\n模型加载方式为文件加载时，填入模型文件的名称，不需要带后缀名，也可\n以配置为 ATC模型文件转换后的 json文件里的最外层 \"name\"字段对应值；模\n型加载方式为内存加载时，配置为模型文件转换后的 json文件里的\n“\"name\"”字段对应值。模型加载方式说明请参见“单算子模型执行”章节\n的内容。\n– layer ：算子名。\n● dump_path ：dump数据文件存储到运行环境 {dump_path} 目录下的路径。\n支持配置绝对路径或相对路径（相对执行命令行时的当前路径）：CANN社区版\n精度调试工具用户指南 11 附录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 95"
+    },
+    {
+      "page": 101,
+      "content": "–绝对路径配置以“ /”开头，例如： /home/output 。\n–相对路径配置直接以目录名开始，例如： output。\n例如： dump_path 配置为 /home/output ，则dump数据文件存储到运行环境的 /\nhome/output 目录下。\n注意\n该参数指定的目录需要提前创建且确保安装时配置的运行用户具有读写权限。\n● dump_mode ：dump数据模式，取值范围： input、output和all，默认取\noutput。可选。\n– input ：dump算子的输入数据。\n– output ：dump算子的输出数据。\n– all：同时 dump算子的输入、输出数据。\n● dump_op_switch ：单算子模型 dump数据开关。取值范围： on和off。默认取值\noff。可选。\n– on：开启单算子模型 dump。\n–off：关闭单算子模型 dump。\n说明\n●不具有输出的 TBE算子、 AI CPU算子，如 StreamActive 、Send、Recv、const等不会生成\ndump数据；编译后的模型中部分算子并不会在 AI CPU或AI Core执行，如 concatD类型算\n子，则无法生成 dump数据。\n●采用dump部分算子场景下，因 data算子不会在 AI CPU或AI Core上执行，如果用户填写\ndump data 节点算子时需要一并填写 data节点算子的后继节点，才能 dump出data节点算子\n数据。\n●按格式填写 acl.json文件时，请确保各个模型的 model_name 值唯一。\n●模型加载方式为文件加载时， model_name 除了可以配置为模型文件名外，也可以配置为模\n型文件转换后的 json文件里的“ \"name\"”字段对应值。模型名称获取方式（同时可以获取到\n各个算子名）：\n如果acl.json文件里 model_name 配置项值同时包括模型文件名、此处获取的 name值，以模\n型文件名的配置项生效。\n步骤3运行应用工程，生成 dump数据文件。\n工程运行完毕后，可以在运行环境 {dump_path} 路径下查看到生成的 dump数据文件。\n生成的路径及格式说明：\n{dump_path}/{time}/{device_id}/{model_name}/{model_id}/{data_index}/{dump 文件}\n单算子模型 dump时，路径为：\n{dump_path}/{device_id}/{op_name}/{dump 文件}\n● time ：dump数据文件落盘的时间。格式为： YYYYMMDDHHMMSS 。\n● device_id ：设备 ID。\n● model_name ：模型名称。\n● model_id ：模型 ID号。\n● data_index ：针对每个 Task ID执行的次数维护一个序号，从 0开始计数，该 Task\n每dump一次数据，序号递增 1。CANN社区版\n精度调试工具用户指南 11 附录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 96"
+    },
+    {
+      "page": 102,
+      "content": "● dump 文件：命名规则如 {op_type}.{op_name}.{task_id}.{timestamp}\n如果model_name 、op_type、op_name 出现了“ .”、“ /”、“ \\”、空格时，转换为\n下划线表示。\n----结束\n11.4.1.3 准备Caffe模型npy文件\n本版本不提供 Caffe模型npy文件生成功能，请自行安装 Caffe环境并提前准备 Caffe原\n始数据“ *.npy”文件。本文仅提供生成符合精度比对要求的 numpy格式Caffe原始数据\n“*.npy”文件的样例参考。\n说明\n如何准备原始 Caffe模型npy文件，您可以参考论坛发帖 算子精度比对工具标杆数据生成环境搭\n建指导（ Caffe  + TensorFlow ）或者自行获取其他方法。该帖仅供参考。\n如果您需要使用二进制格式 dump文件进行比对，请参见 11.4.3 如何进行 npy文件转 dump文件\n完成npy文件转换成 dump文件。\nCaffe原始npy文件准备要求：\n●文件内容以 numpy格式保存。\n●文件命名以 {op_name}.{output_index}.{timestamp} .npy形式命名。设置 numpy\n数据文件名包括 output_index 字段且值为 0，确保转换生成的 dump数据的\noutput_index 为0。因为精度比对时，默认从第一个 output_index 为0的数据开\n始，否则无比对结果。\n●为确保生成符合命名要求的 .npy文件，需要对原始的 Caffe模型文件去除 in-\nplace，生成新的 .prototxt 模型文件用于生成 .npy文件（例如：如果有未去除 in-\nplace的A、B、C、D四个融合算子，进行 dump数据，输出的结果为 D算子的结\n果，但命名却是 A算子开头，就会导致比对时找不到文件）。针对量化场景，需要\n先在环境上安装 AMCT再执行去除 in-place命令，安装方法请参见《 AMCT模型压\n缩工具》。\n${INSTALL_DIR}/tools/operator_cmp/compare ，${INSTALL_DIR} 请替换为 CANN\n软件安装后文件存储路径。以 root用户安装为例，安装后文件默认存储路径\n为：/usr/local/Ascend/cann 。\n执行命令去除 in-place，命令行举例如下：\npython3 inplace_layer_process.py -i /home/user/resnet50.prototxt\n执行命令后，在 /home/user 目录下生成去除 in-place的new_resnet50.prototxt 文\n件。\n●针对量化场景：为确保精度误差在合理范围内，需要执行 Caffe模型推理时预处理\n数据与Caffe昇腾模型压缩时预处理数据一致。\n为输出符合精度比对要求的“ *.npy”文件，需在推理结束后的代码中增加 dump操\n作，示例代码如下：\n    # read prototxt file\n    net_param = caffe_pb2.NetParameter()         \n    with open(self.model_file_path,  'rb') as model_file:\n        google.protobuf.text_format.Parse(model_file.read(),  net_param)\n        # save data to numpy file\n        for layer in net_param.layer: \n            name = layer.name.replace(\"/\", \"_\").replace(\".\", \"_\")\n            index = 0\n            for top in layer.top: CANN社区版\n精度调试工具用户指南 11 附录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 97"
+    },
+    {
+      "page": 103,
+      "content": "                data = net.blobs[top].data[...]\n                file_name  = name + \".\" + str(index) + \".\" + str( \n                    round(time.time() * 1000000)) + \".npy\"\n                output_dump_path = os.path.join(self.output_path, file_name)\n                np.save(output_dump_path, data)\n                print('The dump data of \"' + name\n                      + '\" has been saved to \"' + output_dump_path + '\".')\n                index += 1\n增加上述代码后，运行 Caffe模型的应用工程，即可生成符合要求的“ *.npy”文件。\n11.4.1.4 准备TensorFlow 模型npy文件\n本版本不提供 TensorFlow 模型npy文件生成功能，请自行安装 TensorFlow 环境并提前\n准备npy文件。本文仅提供生成 numpy格式TensorFlow 原始数据“ *.npy”文件的样例\n参考。\n说明\n如果您需要使用二进制格式 dump文件进行比对，请参见 11.4.3 如何进行 npy文件转 dump文件\n完成npy文件转换成 dump文件。\n在进行 TensorFlow 模型生成 npy文件前，您需要已经有一套完整的、可执行的、标准的\nTensorFlow 模型应用工程。然后利用 TensorFlow 官方提供的 debug工具tfdbg调试程\n序，从而生成 npy文件。主要操作示例如下，请根据用户的应用工程适配操作：\n步骤1修改TF应用工程脚本，添加 debug选项设置。代码中增加如下代码：\n● Estimator 模式：\nfrom tensorflow.python  import debug as tf_debug\ntraining_hooks = [train_helper.PrefillStagingAreaHook(),  tf_debug.LocalCLIDebugHook()]\n如图11-1所示，添加 tfdbg的hook。\n图11-1 Estimator 模式\n● session.run 模式：\nfrom tensorflow.python  import debug as tf_debug\nsess = tf_debug.LocalCLIDebugWrapperSession(sess, ui_type=\"readline\")\n如图11-2所示，在 run之前设置 tfdbg装饰器。CANN社区版\n精度调试工具用户指南 11 附录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 98"
+    },
+    {
+      "page": 104,
+      "content": "图11-2 session.run 模式\n步骤2执行推理脚本。\n进入调试命令行交互模式后，输入 run命令。\n步骤3收集npy文件。\n执行run命令完成后，在命令行交互界面，可以通过 lt查询已存储的张量，通过 pt可以\n查看已存储的张量内容，可以保存数据为 numpy格式文件。\n因为tfdbg一次命令只能 dump一个tensor，为了自动生成收集所有数据，可以按以下\n几个步骤操作：\n1.执行lt > tensor_name 将所有 tensor的名称暂存到文件里。\n2.退出tfdbg命令行，在 linux命令行下执行下述命令，用以生成在 tfdbg命令行执行\n的命令。\ntimestamp=$[$(date +%s%N)/1000] ; cat tensor_name | awk '{print \"pt\",$4,$4}' | awk '{gsub(\"/\", \"_\", \n$3);gsub(\":\", \".\", $3);print($1,$2,\"-n 0 -w \"$3\".\"\"'$timestamp'\"\".npy\")}' > tensor_name_cmd.txt\n说明\n●该示例生成符合精度比对需要的 npy文件名称格式，存储到 tensor_name_cmd.txt 文件。其\n中，tensor_name 为自定义 tensor列表对应的文件名， timestamp 为16位的时间戳。\n●本步骤也可以不退出 tfdbg命令行，重新开启一个命令窗口，在新的窗口中执行。\n3.回到tfdbg命令行，输入 run命令后，将上一步生成的所有 tensor存储的命令粘贴\n执行，即可存储所有 npy文件。\nnpy文件默认是以 numpy.save() 形式存储的，上述命令会将“ /”与“ :”用下划线\n_替换。\n说明\n如果命令行界面无法粘贴文件内容，可以在 tfdbg命令行中输入“ mouse off”指令关闭鼠\n标模式后再进行粘贴。\n4.检查生成的 npy文件命名是否符合规则，如 图11-3所示。CANN社区版\n精度调试工具用户指南 11 附录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 99"
+    },
+    {
+      "page": 105,
+      "content": "说明\n– npy文件命名规则： {op_name}.{output_index}.{timestamp} .npy，其中 op_name 字段\n需满足“ A-Za-z0-9_- ”正则表达式规则， timestamp 为16位时间戳， output_index 为\n0~9数字组成。\n–如果因算子名较长，造成按命名规则生成的 npy文件名超过 255字符而产生文件名异\n常，这类算子不支持精度比对。\n–因tfdbg自身原因或运行环境原因，可能存在部分生成的 npy文件名不符合精度比对要\n求，请按命名规则手工重命名。如果不符合要求的 npy文件较多，请参见 10.8 生成npy\n文件名异常情况批量处理 重新生成 npy文件。\n图11-3 查询.npy文件\n----结束\n11.4.2 Tensor 比对\n11.4.2.1 说明与约束\n说明\n●原命令行比对方式将保持原有功能，不继续演进，推荐使用新的比对方式进行精\n度比对。\n●原命令行比对方式只支持 protobuf 序列化后的 dump文件，不支持自定义格式的\ndump文件。\n● Tensor 命令行方式比对提供按整网比对和按单算子比对两种，请根据比对场景选\n择比对方式。\n约束\n●需要确保离线模型的 dump文件与Caffe、TensorFlow 模型的 npy或dump文件为相\n同模型的数据。如果不是相同模型的数据，但模型中有相同的算子名称，也可以\n进行比对，但结果数据只显示匹配到的相同算子的比对结果。\n●针对FastRCNN 网络场景， ProposalD 算子及之后的算子，算子精度不达标属于正\n常情况，最终结果以 FSRDetectionOutput 算子的比对结果精度为准。\n●如果在图编译过程中，原图的算子发生了融合，导致算子的 output在编译后的模\n型中找不到对应的 output时，该算子无法进行比对。\n●如果在图编译阶段对图做了结构性修改（如 stride切分、 L1 fusion 、L2 fusion ）\n的场景，会造成算子的 input或output无法比对。CANN社区版\n精度调试工具用户指南 11 附录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 100"
+    },
+    {
+      "page": 106,
+      "content": "●如果比对数据两边相同算子有 dump数据，但算子的 Shape不一致（离线模型算子\nShape变小）或 Format不支持转换，该算子无法进行比对。\n●当模型转换对输入数据做了额外的预处理，造成原始模型的输入与离线模型的\ndata算子输入格式不同时（比如 AIPP场景下 data输入为 YUV），data算子比对结\n果异常、不具备参考价值。\n●如果没有关闭对应的融合规则，会使得量化算子与之前的算子进行融合，导致该\n算子的 output的比对结果不可信。\n●量化模型里做了量化处理的算子无法比对，必须是反量化的输出才能比对，量化\n模型里未做量化处理的算子不受影响。例如，量化模型里 AscendQuant 算子的\noutput无法比对。\n11.4.2.2 比对数据说明\n执行Tensor比对前，请按照 表11-6要求准备好比对数据。\n说明\nMy Output 离线模型文件与量化融合规则文件使用场景说明：\n●离线模型文件：使用 AI处理器运行生成的 dump数据与 Ground Truth 比对，选择该模型文\n件。\n●量化融合规则文件：只要涉及量化与非量化数据比对，则必须选择该文件。\n表11-6 Tensor比对前数据准备\n序号待比对数据\n（My Output ）标准数据\n（Ground Truth ）模型文件 /融合规则\n文件\n1非量化离线模型在 AI处理器\n上运行生成的 dump数据非量化原始模型的 npy\n文件（或 dump数据）\n(Caffe)非量化离线模型文件\n（*.om）\n2量化离线模型在 AI处理器上\n运行生成的 dump数据非量化原始模型的 npy\n文件（或 dump数据）\n(Caffe)●量化离线模型文\n件（*.om）\n●昇腾模型压缩后\n的量化融合规则\n文件（ json文件）\n3量化原始模型的 npy文件\n（或dump数据）(Caffe)非量化原始模型的 npy\n文件（或 dump数据）\n(Caffe)昇腾模型压缩后的量\n化融合规则文件\n（json文件）\n4量化离线模型在 AI处理器上\n运行生成的 dump数据量化原始模型的 npy文\n件（或 dump数据）\n(Caffe)量化离线模型文件\n（*.om）\n5非量化离线模型在 AI处理器\n上运行生成的 dump数据非量化原始模型的 npy\n文件（或 dump数据）\n(TensorFlow)非量化离线模型文件\n（*.om）\n6通过AI处理器运行生成的\ndump数据通过AI处理器运行生成\n的dump数据-\n CANN社区版\n精度调试工具用户指南 11 附录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 101"
+    },
+    {
+      "page": 107,
+      "content": "11.4.2.3 整网比对\n命令格式说明\nTensor比对命令行格式如下 :\npython3 compare_vector.py -l <LEFT_DUMP_PATH> -r <RIGHT_DUMP_PATH> [-f \n<FUSION_JSON_FILE_PATH>] [-q <QUANT_FUSION_RULE_FILE_PATH>] -o <OUTPUT_PATH> [-custom \n<CUSTOM_PATH>]\npython3 compare_vector.py -l <LEFT_DUMP_PATH> -r <RIGHT_DUMP_PATH> -f \n<FUSION_JSON_FILE_PATH> -o <OUTPUT_PATH> [-custom <CUSTOM_PATH>]\n● -l：My Output 模型的比对数据文件目录。\n● -r：Ground Truth 模型的比对数据文件目录。\n● -o：比对数据结果存储目录及文件名。\n不建议配置与当前用户不一致的其它用户目录，避免提权风险。\n● -f：全网层信息文件（通过使用 ATC转换.om模型文件生成的 json文件或转换 .txt图\n文件生成的 json文件）。可选。\n● -q：量化融合规则文件。可选。\n● -csv ：用于将比对的数据结果写入 csv文件中，配置该参数即开启，默认未配置，\n表示关闭，即将比对结果保存为普通文本文件。可选\n● -custom ：用户自定义 Format转换.py文件存放路径，需指定到\n“format_convert ”目录的上一层目录。可选。 .py文件相关要求参见 准备自定义\nFormat转换.py文件。\n不建议调用与当前用户不一致的其它用户目录下的自定义脚本文件，避免提权风\n险。\n请根据 11.4.2.2 比对数据说明 中准备的数据类型，选择 -f或-q参数项。\n比对步骤\nTensor比对命令行方式操作步骤：\n说明\n●本节涉及的 .json文件、目录等名称均为举例，请根据实际环境替换；其中 result和log日志路\n径需提前创建，并确保运行用户具有读写权限。\n●本节以非量化 AI处理器运行生成的 dump数据与非量化 Caffe模型npy文件比对为例进行介\n绍，下文中参数说明均以该示例介绍，请根据您的比对数据选择不同场景加以替换理解。\n●如果是两份基于相同模型、 AI处理器运行生成的 dump数据进行精度比对，需确保 input个\n数、output个数、 Format、Shape必须完全一致，否则无法比对；另外，此场景下命令行只\n需要带 -l、-r、-o参数，不需要输入 -f、-q参数。\n步骤1登录开发环境。\n步骤2执行export命令设置环境变量并生成 json文件。\n1.设置环境变量\nexport LD_LIBRARY_PATH=/home/xxx/Ascend/cann/lib64:${LD_LIBRARY_PATH}\n2.生成json文件\natc --mode= 1 --om= $HOME/data/resnet50.om  --json= $HOME/data/resnet50.json\natc --mode= 5 --om= ge_proto_00005_Build.txt  --json= ge_proto_00005_Build.txt.json\n步骤3进入/home/xxx/Ascend/cann/tools/operator_cmp/compare 目录。CANN社区版\n精度调试工具用户指南 11 附录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 102"
+    },
+    {
+      "page": 108,
+      "content": "步骤4执行Tensor比对命令，样例命令如下：\npython3 compare_vector.py -l $HOME/MyApp_mind/resnet50  -r $HOME/Standard_caffe/resnet50  -f \n$HOME/data/resnet50.json  -o $HOME/result/result.txt\npython3 compare_vector.py -l $HOME/MyApp_mind/resnet50  -r $HOME/Standard_tf/resnet50  -f $HOME/\ndata/ge_proto_00005_Build.txt.json  -o $HOME/result/result.txt\n说明\n如果需要保存为 csv格式文件，可以修改命令为： -o $HOME/result/result.csv -csv\n步骤5Tensor比对结果 result.txt 文件内容如 图11-4和图11-5所示。\n图11-4 比对结果（推理）\n图11-5 比对结果（训练）\n参数解释如下：\n● LeftOp ：表示 My Output 模型的算子名。\n● RightOp ：表示 Ground Truth 模型的算子名。\n● TensorIndex ：表示 My Output 模型算子的 input ID和output ID 。\n● CosineSimilarity ：进行余弦相似度算法比对出来的结果，范围是 [-1,1]，比对的\n结果如果越接近 1，表示两者的值越相近，越接近 -1意味着两者的值越相反。\n● MaxAbsoluteError ：进行最大绝对误差算法比对出来的结果，值越接近于 0，表明\n越相近，值越大，表明差距越大。\n● AccumulatedRelativeError ：进行累积相对误差算法比对出来的结果，值越接近于\n0，表明越相近，值越大，表明差距越大。\n● RelativeEuclideanDistance ：进行欧氏相对距离算法比对出来的结果，值越接近\n于0，表明越相近，值越大，表明差距越大。\n● KullbackLeiblerDivergence ：进行 KL散度算法比对出来的结果，取值范围是 0到无\n穷大。 KL散度越小，真实分布与近似分布之间的匹配越好。\n● StandardDeviation ：进行标准差算法比对出来的结果，取值范围： 0到无穷大。\n标准差越小，离散度越小，表明越接近平均值。该列显示 My Output 和Ground\nTruth两组数据的均值和标准差，第一组展示 My Output 模型dump数据的数值CANN社区版\n精度调试工具用户指南 11 附录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 103"
+    },
+    {
+      "page": 109,
+      "content": "（均值和标准差），第二组展示 Ground Truth 模型dump数据的数值（均值和标准\n差）。\n●显示“ *”，表示在 NPU侧新增的算子无对应的标准算子；“ NaN”表示无比对结\n果。\n●余弦相似度和 KL散度比对结果为 NaN，其他算法有比对数据，则表明左侧或右侧\n数据为 0；KL散度比对结果为 inf，表明右侧数据有一个为 0；比对结果为 nan，表\n示dump数据有 nan。\n----结束\n11.4.2.4 单算子比对\n命令格式说明\nTensor比对命令行格式如下 :\npython3 compare_vector.py -l <LEFT_DUMP_PATH> -r <RIGHT_DUMP_PATH> [-f \n<FUSION_JSON_FILE_PATH>] [-q <QUANT_FUSION_RULE_FILE_PATH>] -o <OUTPUT_PATH> -d \n<OP_NAME> [-t <DETAIL_TYPE>] [-i <DETAIL_INDEX>] [-custom <CUSTOM_PATH>]\npython3 compare_vector.py -l <LEFT_DUMP_PATH> -r <RIGHT_DUMP_PATH> -f \n<FUSION_JSON_FILE_PATH> -o <OUTPUT_PATH> -d <OP_NAME> [-t <DETAIL_TYPE>] [-i <DETAIL_INDEX>] \n[-custom <CUSTOM_PATH>]\n参数说明如下：\n● -l：My Output 模型比对数据文件目录。\n● -r：Ground Truth 模型比对数据文件目录。\n● -o：比对数据结果待存储目录。\n不建议配置与当前用户不一致的其它用户目录，避免提权风险。\n● -f：离线模型的全网层信息文件（通过使用 ATC转换.om模型文件生成的 json文件\n或转换 .txt图文件生成的 json文件）。可选。\n● -q：量化融合规则文件。可选。\n● -d：待比对的 My Output 模型单算子层名。\n● -t：dump数据的输入输出类型，取值 input或output，默认取 output。可选。\n● -i：My Output 模型的算子的 input_index 或output_index 。可选。\n● -csv ：用于将比对的数据结果写入 csv文件中，配置该参数即开启，默认未配置，\n表示关闭，即将比对结果保存在 txt文件中。\n● -custom ：用户自定义 Format转换.py文件存放路径，需指定到\n“format_convert ”目录的上一层目录。可选。 .py文件相关要求参见 准备自定义\nFormat转换.py文件。\n不建议调用与当前用户不一致的其它用户目录下的自定义脚本文件，避免提权风\n险。\n请根据 11.4.2.2 比对数据说明 中准备的数据类型，选择 -f或-q参数项。\n比对步骤\nTensor比对命令行方式操作步骤：CANN社区版\n精度调试工具用户指南 11 附录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 104"
+    },
+    {
+      "page": 110,
+      "content": "说明\n●本节涉及的 .json文件、目录等名称均为举例，请根据实际环境替换；其中 result和log日志路\n径需提前创建，并确保运行用户具有读写权限。\n●本节以非量化 AI处理器运行生成的 dump数据与非量化 Caffe模型npy文件比对为例进行介\n绍，下文中参数说明均以该示例介绍，请根据您的比对数据选择不同场景加以替换理解。\n●不支持两份基于相同模型、 AI处理器运行生成的 dump数据进行单算子精度比对。\n步骤1登录开发环境。\n步骤2执行export命令设置环境变量并生成 json文件。\n设置环境变量：\nexport LD_LIBRARY_PATH=/home/xxx/Ascend/cann/lib64:${LD_LIBRARY_PATH}\n生成json文件：\natc --mode= 1 --om= $HOME/data/resnet50.om --json= $HOME/data/resnet50.json\natc --mode= 5 --om= ge_proto_00005_Build.txt  --json= ge_proto_00005_Build.txt.json\n步骤3进入${INSTALL_DIR}/tools/operator_cmp/compare ，${INSTALL_DIR} 请替换为 CANN\n软件安装后文件存储路径。以 root用户安装为例，安装后文件默认存储路径为： /usr/\nlocal/Ascend/cann 。\n步骤4执行Tensor比对命令，样例命令如下：\npython3 compare_vector.py -l $HOME/MyApp_mind/resnet50  -r $HOME/Standard_caffe/resnet50  -f \n$HOME/data/resnet50.json  -o $HOME/result   -d pool5  -i 0\npython3 compare_vector.py -l $HOME/MyApp_mind/resnet50  -r $HOME/Standard_tf/resnet50  -f $HOME/\ndata/ge_proto_00005_Build.txt.json  -o $HOME/result   -d gradients/AddN_63  -i 0\n步骤5Tensor比对结果文件内容如 图11-6和图11-7所示。\n图11-6 单算子比对概要结果\n单算子比对概要结果存放在“ {op_name}_input_{index}_summary.txt ”或\n“{op_name}_output_{index}_summary.txt ”文件中，各参数说明如下：\n● TotalCount ：该算子的 dump数据的 data个数。\n● LeftOp ：表示 My Output 模型算子名。\n● RightOp ：表示 Ground Truth 模型的算子名。\n● Format ：数据格式。\n● MinAbsoluteError & MaxAbsoluteError ：绝对误差的最小和最大值范围。\n● MinRelativeError & MaxRelativeError ：相对误差的最小和最大值范围。CANN社区版\n精度调试工具用户指南 11 附录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 105"
+    },
+    {
+      "page": 111,
+      "content": "图11-7 单算子完整比对结果\n单算子比对完整结果存放在“ {op_name}_input_{index}_{file_index}.csv ”或\n“{op_name}_output_{index}_{file_index}.csv ”文件中，每个文件最多记录 100万条\n数据。图11-7中各列参数说明如下：\n● N C H W ：数据的坐标点。\n● Left ：该列为 My Output 模型的算子 dump值。\n● Right ：该列为 Ground Truth 模型的算子 dump值。\n● RelativeError ：相对误差， AbsoluteError 值除以 Ground Truth 模型算子的 dump值\n比对出来的结果。当 Ground Truth 算子的 dump值为0时，该处显示为“ -”。\n● AbsoluteError ：绝对误差， My Output 模型算子的 dump值减Ground Truth 模型\n算子的 dump值取绝对值比对出来的结果。\n----结束\n11.4.3 如何进行 npy文件转 dump文件\n说明\n本功能将在后续版本下线，当前版本推荐使用上文中的 10.3 dump 数据文件 Format转换。\n转换Caffe模型npy文件为 dump数据文件\n获取到Caffe原始数据后，通过 dump_data_conversion.py 脚本进行数据转换，输出二\n进制格式的 dump文件。命令行格式如下：\npython3 dump_data_conversion.py -type type -target target  -i input_path  -o output_pathCANN社区版\n精度调试工具用户指南 11 附录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 106"
+    },
+    {
+      "page": 112,
+      "content": "● -type ：数据类型，必选参数。参数值选项：\n– quant ：量化Caffe模型数据。\n– tf：非量化 TensorFlow 模型数据。\n–caffe：非量化Caffe模型数据。\n–offline：离线模型数据。\n● -target ：数据转换目标格式，参考值选项： numpy和dump。必选参数。\n– numpy ：dump文件转换为 numpy文件。\n– dump ：numpy文件转换为 dump文件。\n● -i：数据文件路径（可以是文件夹或者文件），必选参数。\n– numpy 文件转换为 dump文件：\n如果“ -i”参数输入是文件夹，则格式要求如下：文件夹下的文件必须是\n{op_name}.{output_index}.{timestamp} .npy格式文件。\n如果“ -i”参数输入是文件名，则输入的文件名需满足 {op_name}.\n{output_index}.{timestamp} .npy格式要求。每次仅支持输入 1个文件。\n其中op_name 对应的名称需满足“ A-Za-z0-9_- ”正则表达式规则，\noutput_index 由0~9数字组成， timestamp 为16位时间戳。\n– dump 文件转 numpy文件：\n“-i”参数输入的文件夹或文件名格式必须满足 11.4.1.1 数据格式要求 章节要\n求。\n● -o：转换后输出文件路径。必选参数。\n不建议配置与当前用户不一致的其它用户目录，避免提权风险。\nCaffe原始数据（ numpy文件）转 dump数据文件命令举例：\npython3 dump_data_conversion.py -type caffe -target dump  -i $HOME/caffenpyfile  -o $HOME/caffedump\n说明\n● dump_data_conversion.py 脚本存放在 ${INSTALL_DIR}/tools/operator_cmp/compare ，$\n{INSTALL_DIR} 请替换为 CANN软件安装后文件存储路径。以 root用户安装为例，安装后文件\n默认存储路径为： /usr/local/Ascend/cann 。\n●使用该脚本进行数据转换，确保主机内存大小不低于 15GB；如果待转换的 dump数据单个文\n件大小超过 441MB，则建议使用更大内存主机。\nTensorFlow 模型npy文件转换 dump数据文件\n获取到 TensorFlow 原始数据后，通过 dump_data_conversion.py 脚本进行数据转换，\n输出二进制格式的 dump文件。命令行格式如下：\npython3 dump_data_conversion.py -type type -target target  -i input_path  -o output_path\nTensorFlow 原始数据（ npy文件）转 dump数据文件的命令举例：\n● -type ：数据类型，必选参数。参数值选项：\n– quant ：量化Caffe模型数据。\n– tf：非量化 TensorFlow 模型数据。\n–caffe：非量化Caffe模型数据。\n–offline：离线模型数据。\n● -target ：数据转换目标格式，参考值选项： numpy和dump。必选参数。CANN社区版\n精度调试工具用户指南 11 附录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 107"
+    },
+    {
+      "page": 113,
+      "content": "– numpy ：dump文件转换为 numpy文件。\n– dump ：numpy文件转换为 dump文件。\n● -i：数据文件路径（可以是文件夹或者文件），必选参数。\n– numpy 文件转换为 dump文件：\n如果“ -i”参数输入是文件夹，则格式要求如下：文件夹下的文件必须是\n{op_name}.{output_index}.{timestamp} .npy格式文件。\n如果“ -i”参数输入是文件名，则输入的文件名需满足 {op_name}.\n{output_index}.{timestamp} .npy格式要求。每次仅支持输入 1个文件。\n其中op_name 对应的名称需满足“ A-Za-z0-9_- ”正则表达式规则，\noutput_index 由0~9数字组成， timestamp 为16位时间戳。\n– dump 文件转 numpy文件：\n“-i”参数输入的文件夹或文件名格式必须满足 11.4.1.1 数据格式要求 章节要\n求。\n● -o：转换后输出文件路径。必选参数。\n不建议配置与当前用户不一致的其它用户目录，避免提权风险。\nTensorFlow 原始数据（ numpy文件）转 dump数据文件命令举例：\npython3 dump_data_conversion.py -type tf -target dump  -i $HOME/tfnpyfile  -o $HOME/tfdump\n说明\n● dump_data_conversion.py 脚本存放在 /home/xxx/Ascend/cann/tools/operator_cmp/\ncompare 路径下。\n●使用该脚本进行数据转换，确保主机内存大小不低于 15GB；如果待转换的 dump数据单个文\n件大小超过 441MB，则建议使用更大内存主机。\n11.4.4 如何进行 dump数据文件 Format转换\n说明\n本功能将在后续版本下线，当前版本推荐使用上文中的 10.3 dump 数据文件 Format转换。\n执行dump数据文件 Format转换\n本版本提供 dump数据文件 Format转换能力，用于用户根据自身需求将 AI处理器生成\n的dump数据文件转换成 numpy数据文件，方便查看。\n该功能通过 shape_conversion.py 脚本实现，该脚本存放在 ${INSTALL_DIR}/tools/\noperator_cmp/compare ，${INSTALL_DIR} 请替换为 CANN软件安装后文件存储路径。\n以root用户安装为例，安装后文件默认存储路径为： /usr/local/Ascend/cann 。命令格\n式如下：\npython3 shape_conversion.py -i <dump_file_path>  -format <format> -o <output_path> [-shape <shape>] [-\ntensor <tensor>] [-index <index>] [-custom <custom_path>]\n命令格式参数项说明：\n● -i：AI处理器生成的 dump文件（含路径）。\n● -format ：转换后的数据 Format。支持的 Format转换类型参见 支持的 Format转\n换类型。\n● -o：转换后的数据存放目录。\n不建议配置与当前用户不一致的其它用户目录，避免提权风险。CANN社区版\n精度调试工具用户指南 11 附录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 108"
+    },
+    {
+      "page": 114,
+      "content": "● -shape ：Format转换需要的 Shape，当前仅 FRACTAL_NZ 转换需要该 Shape，格式\n为([0-9]+,)+[0-9]+ ，每个数字必须大于 0。可选。\n● -tensor ：表示转换的 dump文件是 input数据还是 output数据，默认为 output。可\n选。\n● -index ：表示 tensor的索引，默认为 0。可选。\n● -custom ：用户自定义 Format转换.py文件存放路径，需指定到\n“format_convert ”目录的上一层目录。可选。 .py文件相关要求参见 准备自定义\nFormat转换.py文件。\n不建议调用与当前用户不一致的其它用户目录下的自定义脚本文件，避免提权风\n险。\n支持的 Format转换类型\n结果保存为“原始文件名 .output.{index}.{shape}.npy ”或“原始文件名 .input.{index}.\n{shape}.npy ”，Shape的格式如： 1x3x224x224 。\n如果自定义的 Format和内置的 Format一样，以自定义 Format为准。\n当前内置的 Format转换支持如下类型：\n● FRACTAL_NZ 转换NCHW\n● FRACTAL_NZ 转换ND\n● HWCN 转换FRACTAL_Z\n● HWCN 转换成 NCHW\n● HWCN 转换成 NHWC\n● NC1HWC0 转换成 HWCN\n● NC1HWC0 转换成 NCHW\n● NC1HWC0 转换成 NHWC\n● NCHW 转换成 FRACTAL_Z\n● NCHW 转换成 NHWC\n● NHWC 转换成 FRACTAL_Z\n● NHWC 转换成 HWCN\n● NHWC 转换成 NCHW\n● NDC1HWC0 转换成 NCDHW\n说明\n一般情况下，非四维的 Format是由四维 Format转换而来，那么对于同一个非四维 Format支持转\n换成多种 Format类型的情况，该非四维 Format只有重新转回原始的四维 Format才有效。例如\nNC1HWC0 支持转换成 HWCN、NCHW、NHWC，但是被转换的 NC1HWC0 数据只有一种四维的\n原始数据，假设为 HWCN，那么该 NC1HWC0 数据只能转换成 HWCN。识别原始数据的 Format\n类型需要了解《 ATC离线模型编译工具 》中的“高级功能  > 单算子模型转换”。\n准备自定义 Format转换.py文件\n用户自定义的 Format转换.py文件只能用来进行 Format转换，文件安全性由用户自行\n保证。\n为满足用户自定义 Format转换，需要按以下要求准备：CANN社区版\n精度调试工具用户指南 11 附录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 109"
+    },
+    {
+      "page": 115,
+      "content": "● .py文件命名需满足规则：“ convert_{format_from}_to_{format_to}.py ”，其\n中，format_from 和format_to 支持的类型如下：\n– NCHW\n– NHWC\n– ND\n– NC1HWC0\n– FRACTAL_Z\n– NC1C0HWPAD\n– NHWC1C0\n– FSR_NCHW\n– FRACTAL_DECONV\n– C1HWNC0\n– FRACTAL_DECONV_TRANSPOSE\n– FRACTAL_DECONV_SP_STRIDE_TRANS\n– NC1HWC0_C04\n– FRACTAL_Z_C04\n– CHWN\n– DECONV_SP_STRIDE8_TRANS\n– NC1KHKWHWC0\n– BN_WEIGHT\n– FILTER_HWCK\n– HWCN\n– LOOKUP_LOOKUPS\n– LOOKUP_KEYS\n– LOOKUP_VALUE\n– LOOKUP_OUTPUT\n– LOOKUP_HITS\n– MD\n– NDHWC\n– C1HWNCoC0\n– FRACTAL_NZ\n● .py文件内容需满足以下规则：\ndef convert(shape_from, shape_to, array):\n    \n    return numpy_array\n参数说明：\n– shape_from ：array数据的转换前的 Shape，一维数组。\n– shape_to ：array数据的转换后的 Shape，一维数组。（可选）。\n– array ：一维原始数据。\n–返回值：转换后的 numpy数组。\n● .py文件存放目录需满足：\n.py文件必须存放在“ format_convert ”目录下，如果该目录不存在，需要新建。CANN社区版\n精度调试工具用户指南 11 附录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 110"
+    },
+    {
+      "page": 116,
+      "content": "11.4.5 如何查看 dump数据文件\n说明\n本功能将在后续版本下线，当前版本推荐使用上文中的 10.4 查看dump数据文件 。\ndump文件无法通过文本工具直接查看其内容，为了查看 dump文件内容，本文提供以\n下脚本将 dump文件转换为 numpy格式文件后，再通过 numpy官方提供的能力转为 txt\n文档进行查看：\n步骤1使用安装用户登录开发环境。\n步骤2进入${INSTALL_DIR}/tools/operator_cmp/compare ，${INSTALL_DIR} 请替换为 CANN\n软件安装后文件存储路径。以 root用户安装为例，安装后文件默认存储路径为： /usr/\nlocal/Ascend/cann 。\n步骤3执行dump_data_conversion.py 脚本，转换 dump文件为 numpy文件。举例：\npython3 dump_data_conversion.py -target numpy  -type offline  -i $HOME/dump  -o $HOME/dumptonumpy\n说明\ndump_data_conversion.py 脚本的各个输入参数使用方法，请参见 11.4.3 如何进行 npy文件转\ndump文件。\n步骤4调用Python，转换 numpy文件为 txt文件。举例：\n$ python3\nPython 3 (default, Mar  5 2020, 16:07:54)[GCC 5.4.0 20160609] on linuxType \"help\", \"copyright\", \"credits\" \nor \"license\" for more information.\n>>> import numpy as np\n>>> a = np.load(\"$HOME/dumptonumpy/ Pooling.pool1.1.1147.1589195081588018.output.0.npy \")\n>>> b = a.flatten()\n>>> np.savetxt(\"$HOME/dumptonumpy/ Pooling.pool1.1.1147.1589195081588018.output.0.txt \", b)\n转换为 .txt格式文件后，维度信息、 dtype均不存在。详细的使用方法请参考 NumPy官\n网介绍。\n----结束CANN社区版\n精度调试工具用户指南 11 附录\n文档版本  01 (2026-05-20) 版权所有  © 华为技术有限公司 111"
+    }
+  ]
+}

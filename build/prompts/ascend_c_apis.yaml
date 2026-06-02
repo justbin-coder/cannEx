@@ -1,0 +1,58 @@
+# Ascend C 已知公开 API 字典，用于 bootstrap_samples 的 apis_used 半自动提取。
+# 维护规则：CANN 官方新增 API 时追加；不再使用的 API 不要删除（历史样例可能仍引用）。
+
+memory_management:
+  - TPipe
+  - TQue
+  - TBuf
+  - GlobalTensor
+  - LocalTensor
+
+data_movement:
+  - DataCopy
+  - DataCopyPad
+  - DataCopyExt
+  - GetSysWorkSpacePtr
+  - Gather
+  - Scatter
+
+compute_cube:
+  - Matmul
+  - MatmulType
+  - TCubeTiling
+  - MatmulImpl
+  - Mmad
+
+compute_vector:
+  - Add
+  - Sub
+  - Mul
+  - Div
+  - Max
+  - Min
+  - Abs
+  - Cast
+  - Exp
+  - Log
+  - Sqrt
+  - Relu
+  - Softmax
+  - LayerNorm
+  - TopK
+  - Sort
+  - Reduce
+  - ReduceSum
+  - ReduceMax
+
+sync_pipeline:
+  - PipeBarrier
+  - SetFlag
+  - WaitFlag
+  - CrossCoreSetFlag
+  - CrossCoreWaitFlag
+
+distributed:
+  - HCCL
+  - AllReduce
+  - AllGather
+  - ReduceScatter

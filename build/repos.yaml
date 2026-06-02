@@ -1,0 +1,46 @@
+# CannEx 代码仓配置（agent 不读，仅离线管道读）
+repos:
+  - name: ops-transformer
+    url: https://gitee.com/ascend/cann-ops/ops-transformer
+    ref: master
+    audience: [A, F]
+    category: operator_implementation
+    priority: P0
+    enabled: true
+    local_path: raw/repos/ops-transformer
+
+  - name: ops-cv
+    url: https://gitee.com/ascend/cann-ops-cv
+    ref: master
+    audience: [A, F]
+    category: operator_cv
+    priority: P1
+    enabled: true
+    local_path: raw/repos/ops-cv
+
+  - name: ops-math
+    url: https://gitee.com/ascend/cann-ops-math
+    ref: master
+    audience: [A, F]
+    category: operator_math
+    priority: P1
+    enabled: true
+    local_path: raw/repos/ops-math
+
+  - name: ops-nn
+    url: https://gitee.com/ascend/cann-ops-nn
+    ref: master
+    audience: [A, F]
+    category: operator_nn
+    priority: P1
+    enabled: true
+    local_path: raw/repos/ops-nn
+
+  - name: cann-ops-adv
+    url: https://gitee.com/ascend/cann-ops-adv.git
+    ref: v9.0.0
+    audience: [A]
+    category: operator_advanced
+    priority: P0
+    enabled: false       # v2-α 不开，v2-β 启用
+    local_path: raw/repos/cann-ops-adv
