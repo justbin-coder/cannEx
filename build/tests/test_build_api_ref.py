@@ -128,3 +128,22 @@ def test_extract_api_name_no_number():
 
 def test_extract_api_name_with_parens():
     assert m.extract_api_name("2.2.1.5 operator[]") == "operator[]"
+
+
+# ── additional edge cases ──────────────────────────────────────────────────
+
+def test_toc_to_structure_empty_returns_empty():
+    assert m.toc_to_structure([], total_pages=100) == []
+
+
+def test_build_api_index_merges_duplicate_names():
+    """同名 API（重载）应合并页范围，pages 取最小 start 和最大 end。"""
+    structure = [
+        {"title": "3.1 DataCopy", "node_id": "0000",
+         "start_index": 10, "end_index": 15, "summary": ""},
+        {"title": "3.2 DataCopy", "node_id": "0001",
+         "start_index": 20, "end_index": 25, "summary": ""},
+    ]
+    idx = m.build_api_index(structure)
+    assert "DataCopy" in idx
+    assert idx["DataCopy"]["pages"] == [10, 25]

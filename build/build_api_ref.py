@@ -40,9 +40,10 @@ def toc_to_structure(toc: list[tuple[int, str, int]], total_pages: int) -> list[
         entries.append({"level": level, "title": title, "start": page, "end": end})
 
     # 递归构建嵌套树
-    counter = {"n": 0}
+    node_counter = 0
 
     def build(items: list[dict], parent_level: int) -> list[dict]:
+        nonlocal node_counter
         nodes = []
         i = 0
         while i < len(items):
@@ -58,12 +59,12 @@ def toc_to_structure(toc: list[tuple[int, str, int]], total_pages: int) -> list[
                     j += 1
                 node = {
                     "title": item["title"],
-                    "node_id": f"{counter['n']:04d}",
+                    "node_id": f"{node_counter:04d}",
                     "start_index": item["start"],
                     "end_index": item["end"],
                     "summary": "",
                 }
-                counter["n"] += 1
+                node_counter += 1
                 children = build(children_items, parent_level + 1)
                 if children:
                     node["nodes"] = children
@@ -92,6 +93,8 @@ def build_api_index(structure: list[dict], prefix: str = "") -> dict[str, dict]:
             else:
                 # 叶子节点 → 进入索引
                 s, e = node.get("start_index"), node.get("end_index")
+                if s is None or e is None:
+                    continue  # skip malformed TOC entry
                 if api_name in index:
                     # 同名 API（重载）：合并页范围
                     existing = index[api_name]
