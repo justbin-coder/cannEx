@@ -113,6 +113,9 @@ HANDLERS = {
         max_depth=p.get("max_depth", 4), read_budget=p.get("read_budget", 8)),
     "get_change_impact_surface": lambda p: repo_mod.api_impact_surface(
         p["repo"], p["symbol"], read_budget=p.get("read_budget", 8)),
+    # ── API 名称查找（2026-06-03 新增）───────────────────────────────────────
+    "lookup_doc_api": lambda p: doc_mod.api_lookup_api(
+        name_or_id=p["doc"], query=p["query"]),
 }
 
 
@@ -126,7 +129,7 @@ def _handle(req: dict) -> dict:
     try:
         result = HANDLERS[method](params)
         return {"id": rid, "ok": True, "result": result}
-    except Exception as e:
+    except (Exception, SystemExit) as e:
         return {"id": rid, "ok": False,
                 "error": {"type": type(e).__name__, "message": str(e)}}
 

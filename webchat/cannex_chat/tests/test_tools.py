@@ -2,7 +2,7 @@ from webchat.cannex_chat.agent.tools import TOOLS, TOOL_NAMES
 
 
 def test_tools_count():
-    assert len(TOOLS) == 17  # 15 + 2 新增
+    assert len(TOOLS) == 18  # 15 + 2 新增 + 1 lookup_doc_api
 
 
 def test_tool_names():
@@ -18,6 +18,8 @@ def test_tool_names():
     # 2026-05-29 新增
     assert "get_operator_call_chain" in TOOL_NAMES
     assert "get_change_impact_surface" in TOOL_NAMES
+    # 2026-06-03 新增
+    assert "lookup_doc_api" in TOOL_NAMES
 
 
 def test_each_tool_is_openai_function_format():

@@ -359,6 +359,26 @@ _TOOL_SPECS: list[dict] = [
             "required": ["repo", "symbol"],
         },
     },
+    # ── API 名称查找（2026-06-03 新增）─────────────────────────────────────────
+    {
+        "name": "lookup_doc_api",
+        "description": (
+            "★ Look up an API by name in API reference documents. Use when the user asks about "
+            "a specific Ascend C API (e.g. 'how to use DataCopy', 'what are the params for "
+            "MatmulApiStaticTiling'). Returns matching API entries with page ranges — follow up "
+            "with read_document_pages to get the full content. PREFER this over get_document_outline "
+            "when the user already knows (or you can infer) a specific API name. Falls back "
+            "gracefully for non-API-reference documents."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "doc": {"type": "string", "description": "Document name or ID (use 'operator_api_ref' for the API reference)"},
+                "query": {"type": "string", "description": "API name or fragment to search, e.g. 'DataCopy', 'Matmul'"},
+            },
+            "required": ["doc", "query"],
+        },
+    },
 ]
 
 def _to_openai_tool(spec: dict) -> dict:

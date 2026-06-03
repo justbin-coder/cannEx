@@ -154,3 +154,20 @@ def test_rpc_get_impact_surface():
     finally:
         proc.terminate()
         proc.wait(timeout=2)
+
+
+def test_rpc_lookup_doc_api():
+    proc = _make_worker()
+    try:
+        # 用软件安装文档测 (无 api_index 也应 gracefully 返回 fallback_hint)
+        resp = _send(proc, {
+            "id": "lookup-1",
+            "method": "lookup_doc_api",
+            "params": {"doc": "软件安装", "query": "anything"},
+        })
+        assert resp["ok"] is True
+        assert "matches" in resp["result"]
+        assert "fallback_hint" in resp["result"]
+    finally:
+        proc.terminate()
+        proc.wait(timeout=2)
