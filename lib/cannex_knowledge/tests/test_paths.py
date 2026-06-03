@@ -7,8 +7,8 @@ def test_root_falls_back_to_repo_root_when_env_unset(monkeypatch):
     import importlib
     from cannex_knowledge import paths
     importlib.reload(paths)
-    # paths.py 在 lib/cannex_knowledge/ 下，parents[2] = CannEx 根
-    assert paths.CANNEX_ROOT.name == "CannEx"
+    # paths.py 在 lib/cannex_knowledge/ 下，parents[2] = cannEx 根（大小写不敏感）
+    assert paths.CANNEX_ROOT.name.lower() == "cannex"
     assert paths.WORKSPACE == paths.CANNEX_ROOT / "workspace"
     assert paths.META_FILE == paths.WORKSPACE / "_meta.json"
     assert paths.REPOS_DIR == paths.WORKSPACE / "repos"
