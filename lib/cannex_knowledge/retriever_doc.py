@@ -212,3 +212,50 @@ def api_pages(name_or_id: str, page_range: str) -> dict:
         "pages": out,
         "breadcrumbs": _page_breadcrumbs(doc.get("structure", []), wanted),
     }
+
+
+# ── API 名称精确查找（api_ref 文档专用快速通道）──────────────────────────
+_LOOKUP_MAX_RESULTS = 10
+
+
+def api_lookup_api(name_or_id: str, query: str) -> dict:
+    """按 API 名称查找，返回匹配条目 + 页码范围。
+
+    匹配策略（按优先级）：
+    1. 精确匹配（大小写不敏感）
+    2. 子串匹配（query 是 api_name 的子串，大小写不敏感）
+    3. 无命中 → 返回空 + fallback_hint
+
+    不引入 score / rank / top_k 语义——遵守 CLAUDE.md §九文档侧约束。
+    文档无 api_index（PageIndex 建的叙事文档）时返回 fallback_hint 引导走 outline。
+    """
+    meta = load_meta()
+    d = resolve_doc(meta, name_or_id)
+    doc = load_doc_json(d)
+    api_index = doc.get("api_index")
+    if not api_index:
+        return {
+            "doc_name": _normalize_doc_name(d["doc_name"]),
+            "matches": [],
+            "fallback_hint": "该文档不支持 API 名称查找，请用 api_outline 按分类浏览",
+        }
+
+    query_lower = query.lower()
+    exact: list[dict] = []
+    substring: list[dict] = []
+    for api_name, info in api_index.items():
+        name_lower = api_name.lower()
+        if name_lower == query_lower:
+            exact.append({"api_name": api_name, **info})
+        elif query_lower in name_lower:
+            substring.append({"api_name": api_name, **info})
+
+    # 精确匹配优先，子串按名称长度升序（越短越精确）
+    substring.sort(key=lambda x: len(x["api_name"]))
+    matches = (exact + substring)[:_LOOKUP_MAX_RESULTS]
+
+    return {
+        "doc_name": _normalize_doc_name(d["doc_name"]),
+        "matches": matches,
+        "fallback_hint": "未找到精确匹配，建议用 api_outline 按分类浏览" if not matches else None,
+    }

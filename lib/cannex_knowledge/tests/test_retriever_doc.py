@@ -79,3 +79,101 @@ def test_fmt_page_ranges_compacts_consecutive():
     assert d._fmt_page_ranges([5]) == "5"
     assert d._fmt_page_ranges([]) == ""
     assert d._fmt_page_ranges([3, 1, 2]) == "1-3"
+
+
+# ── api_lookup_api ────────────────────────────────────────────────────────
+
+def _make_mock_doc_with_index(tmp_path):
+    """创建一个带 api_index 的 mock 文档 JSON + _meta.json。"""
+    import json as _json
+    doc_id = "test-api-ref-doc"
+    doc_json = {
+        "id": doc_id,
+        "type": "pdf",
+        "doc_name": "test_api_ref.pdf",
+        "doc_description": "Test API ref",
+        "page_count": 100,
+        "structure": [{"title": "Root", "node_id": "0000",
+                        "start_index": 1, "end_index": 100, "summary": ""}],
+        "pages": [{"page": i, "content": f"page {i}"} for i in range(1, 101)],
+        "api_index": {
+            "DataCopy": {"pages": [10, 15], "section": "SIMD > DataCopy"},
+            "DataCopyPad": {"pages": [16, 20], "section": "SIMD > DataCopyPad"},
+            "MatmulApiStaticTiling": {"pages": [50, 55], "section": "Cube > Matmul > MatmulApiStaticTiling"},
+            "GetSize": {"pages": [30, 31], "section": "SIMD > LocalTensor > GetSize"},
+        },
+    }
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    (docs_dir / f"{doc_id}.json").write_text(_json.dumps(doc_json, ensure_ascii=False))
+    meta = {
+        "version": "v2.0", "docs": [
+            {"doc_id": doc_id, "doc_name": "test_api_ref.pdf",
+             "category": "api_ref", "pages": 100, "path": f"docs/{doc_id}.json"}
+        ], "repos": []
+    }
+    (tmp_path / "_meta.json").write_text(_json.dumps(meta, ensure_ascii=False))
+    return tmp_path
+
+
+def test_api_lookup_exact_match(tmp_path, monkeypatch):
+    ws = _make_mock_doc_with_index(tmp_path)
+    monkeypatch.setattr(d, "WORKSPACE", ws)
+    monkeypatch.setattr(d, "META_FILE", ws / "_meta.json")
+    res = d.api_lookup_api("test_api_ref.pdf", "DataCopy")
+    assert len(res["matches"]) >= 1
+    exact = [m for m in res["matches"] if m["api_name"] == "DataCopy"]
+    assert len(exact) == 1
+    assert exact[0]["pages"] == [10, 15]
+    assert res["fallback_hint"] is None
+
+
+def test_api_lookup_case_insensitive(tmp_path, monkeypatch):
+    ws = _make_mock_doc_with_index(tmp_path)
+    monkeypatch.setattr(d, "WORKSPACE", ws)
+    monkeypatch.setattr(d, "META_FILE", ws / "_meta.json")
+    res = d.api_lookup_api("test_api_ref.pdf", "datacopy")
+    exact = [m for m in res["matches"] if m["api_name"] == "DataCopy"]
+    assert len(exact) == 1
+
+
+def test_api_lookup_substring_returns_prefix_and_exact(tmp_path, monkeypatch):
+    ws = _make_mock_doc_with_index(tmp_path)
+    monkeypatch.setattr(d, "WORKSPACE", ws)
+    monkeypatch.setattr(d, "META_FILE", ws / "_meta.json")
+    res = d.api_lookup_api("test_api_ref.pdf", "DataCopy")
+    names = [m["api_name"] for m in res["matches"]]
+    assert "DataCopy" in names
+    assert "DataCopyPad" in names
+    # exact match must appear before substring match
+    assert names.index("DataCopy") < names.index("DataCopyPad")
+
+
+def test_api_lookup_no_match_gives_fallback_hint(tmp_path, monkeypatch):
+    ws = _make_mock_doc_with_index(tmp_path)
+    monkeypatch.setattr(d, "WORKSPACE", ws)
+    monkeypatch.setattr(d, "META_FILE", ws / "_meta.json")
+    res = d.api_lookup_api("test_api_ref.pdf", "NonExistentAPI")
+    assert res["matches"] == []
+    assert res["fallback_hint"] is not None
+
+
+def test_api_lookup_no_index_gives_fallback_hint(tmp_path, monkeypatch):
+    """PageIndex 建的文档无 api_index → 返回空 + fallback_hint 含'不支持'。"""
+    import json as _json
+    doc_id = "no-index-doc"
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    (docs_dir / f"{doc_id}.json").write_text(_json.dumps({
+        "id": doc_id, "doc_name": "old.pdf", "doc_description": "",
+        "page_count": 10, "structure": [], "pages": [],
+    }))
+    meta = {"version": "v2.0", "docs": [
+        {"doc_id": doc_id, "doc_name": "old.pdf", "pages": 10, "path": f"docs/{doc_id}.json"}
+    ], "repos": []}
+    (tmp_path / "_meta.json").write_text(_json.dumps(meta))
+    monkeypatch.setattr(d, "WORKSPACE", tmp_path)
+    monkeypatch.setattr(d, "META_FILE", tmp_path / "_meta.json")
+    res = d.api_lookup_api("old.pdf", "Anything")
+    assert res["matches"] == []
+    assert "不支持" in res["fallback_hint"]
