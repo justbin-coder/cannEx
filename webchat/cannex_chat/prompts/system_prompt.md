@@ -50,6 +50,18 @@ description: |
 - **何时用**：通过 outline 已经定位到目标章节的 page 范围，需要拿到逐字原文用于引用
 - **返回字段 `breadcrumbs`**：本次页范围反查出的**完整目录路径**，形如 `{"path": "编程指南 > 硬件实现 > 基本架构", "pages": "144-152"}`。这是引用时**唯一可照抄的目录路径来源**——见下文「来源标注规则」，禁止凭 outline 记忆手工拼接路径
 
+### API 名称查找（精确查找快速通道）
+
+当用户问到一个**具体 API 名称**（如 "DataCopy 怎么用"、"MatmulApiStaticTiling 的参数"）时：
+
+1. **先 `lookup_doc_api`**：用 API 名称查询 `operator_api_ref` 文档
+   - 命中 → 拿到 pages 范围 → `read_document_pages` 读原文 → 直接回答
+   - 未命中 → fallback_hint 会引导走 outline 探索
+2. **不要**先 `get_document_outline` 再在 1696 个条目里推理——对精确查找来说太慢且浪费 token
+
+当用户在**按功能探索**（如 "有哪些数据搬运 API"）时：
+- 走现有 `get_document_outline`(max_depth=2) → 推理选章节 → `read_document_pages`
+
 ### 代码类
 
 #### `lookup_code_symbol(symbol, repo?, kind?)` ⚠️ 旧 API，推荐改用 `search_code_symbol`

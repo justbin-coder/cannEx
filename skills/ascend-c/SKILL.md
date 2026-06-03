@@ -151,6 +151,7 @@ python3 skills/ascend-c/tools/cannex_repo.py symbol ops-transformer <符号名> 
 ├── 读源码                            → read_repo_file
 ├── 浏览目录                          → list_repo_files
 ├── 文档结构 / 章节定位                → get_document_outline
+├── 用户问**具体 API**（精确查找）     → lookup_doc_api → 命中→read_document_pages→回答 / 未命中→outline探索
 └── 读文档原文                        → read_document_pages
 ```
 
@@ -285,6 +286,7 @@ read_repo_file(repo, "op_kernel/arch35/flash_attention_score_kernel_base.h")  �
 | `explore_code_symbols(repo, query, max_symbols)` | `python3 skills/ascend-c/tools/cannex_repo.py explore_symbols <repo> "<query>" [--max_symbols N]` |
 | `get_operator_call_chain(repo, root, max_depth, read_budget)` | `python3 skills/ascend-c/tools/cannex_repo.py call_chain <repo> <root> [--max-depth N] [--read-budget N]` |
 | `get_change_impact_surface(repo, symbol, read_budget)` | `python3 skills/ascend-c/tools/cannex_repo.py impact_surface <repo> <symbol> [--read-budget N]` |
+| `lookup_doc_api(doc, api_name)` | `python3 skills/ascend-c/tools/cannex_doc.py lookup <doc> "<api_name>"` |
 | `list_known_resources()` | `python3 skills/ascend-c/tools/cannex_doc.py list && python3 skills/ascend-c/tools/cannex_repo.py list` |
 | `list_repo_files(repo, dir_path, max_depth)` | `python3 skills/ascend-c/tools/cannex_repo.py list_files <repo> [dir_path] [--max_depth N]` |
 | `read_repo_file(repo, file_path, start, end)` | `python3 skills/ascend-c/tools/cannex_repo.py read_file <repo> <file_path> [--start_line N] [--end_line N]` |
