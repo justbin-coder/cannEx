@@ -17,3 +17,14 @@ docs:
     audience: [A, F]
     priority: P0
     enabled: true
+
+  - name: operator_api_ref
+    file: "CANN社区版 9.1.0-beta.1 Ascend C算子开发接口参考 01.pdf"
+    local_path: "raw/docs/CANN社区版 9.1.0-beta.1 Ascend C算子开发接口参考 01.pdf"
+    version: 9.1.0-beta.1
+    category: operator_api_ref
+    audience: [A, F]
+    priority: P0
+    build_mode: api_ref
+    doc_description: "CANN 9.1.0-beta.1 Ascend C 算子开发接口参考。涵盖 SIMD、Cube、Vector、AI CPU 四大类 API 的完整接口说明，包括函数签名、参数说明、使用约束和代码示例。"
+    enabled: true
