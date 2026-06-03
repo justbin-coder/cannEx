@@ -8,6 +8,7 @@ Usage:
   cannex_doc.py meta <name_or_id>
   cannex_doc.py structure <name_or_id>
   cannex_doc.py pages <name_or_id> <range>
+  cannex_doc.py lookup <name_or_id> <api_name>
 """
 import json
 import os
@@ -43,6 +44,10 @@ def cmd_pages(key, range_spec):
     _print(D.api_pages(key, range_spec))
 
 
+def cmd_lookup(key, query):
+    _print(D.api_lookup_api(key, query))
+
+
 def main():
     if len(sys.argv) < 2:
         print(__doc__)
@@ -52,6 +57,7 @@ def main():
     elif cmd == "meta"       and len(args) == 1: cmd_meta(args[0])
     elif cmd == "structure"  and len(args) == 1: cmd_structure(args[0])
     elif cmd == "pages"      and len(args) == 2: cmd_pages(args[0], args[1])
+    elif cmd == "lookup"    and len(args) == 2: cmd_lookup(args[0], args[1])
     else:
         print(__doc__)
         sys.exit(1)
