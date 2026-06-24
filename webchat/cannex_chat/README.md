@@ -11,7 +11,17 @@ CannEx 的 Web 形态（Phase 2）——基于 Chainlit + Anthropic tool_use 的
 
 详见 `docs/specs/2026-05-24-webchat-architecture-design.md`。
 
-## 本地开发
+## 快速上手（推荐）
+
+拉仓后跑一键脚本：建 venv（Python 3.11）、装依赖、生成 `deploy/.env`（含随机密钥）、自检。
+
+```bash
+cd <项目根>
+bash bootstrap.sh                  # 依赖装坏时用 bash bootstrap.sh --recreate
+# 按结尾提示编辑 deploy/.env 填 ANTHROPIC_API_KEY，然后启动
+```
+
+## 本地开发（手动等价步骤）
 
 ```bash
 # 1. 进入项目根目录
