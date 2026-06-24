@@ -16,12 +16,20 @@
 - 不带 `-w`，**改代码不会自动重载，必须手动重启**
 - 用户库：`deploy/cannex.db`（由 env `CANNEX_USERS_DB` 指定）
 
-**三个必备环境量**（已固化在 `deploy/run_local.sh`，会优先于 `.env`）
+**必备环境量**
 - `CANNEX_ROOT`（由 `run_local.sh` 按脚本位置自动推导为 `<repo-root>`，覆盖 `.env` 里残留的 macOS 路径）
-- `CANNEX_USERS_DB=<repo-root>/deploy/cannex.db`
-- `CHAINLIT_AUTH_SECRET=<固定值>`（换掉会注销所有在线用户）
-- `CANNEX_CONFIG_SECRET=<可选>`（LLM 配置加密密钥；缺省回落 `CHAINLIT_AUTH_SECRET`；轮换会使所有用户 key 失效）
+- `CANNEX_USERS_DB=<repo-root>/deploy/cannex.db`（可在 `deploy/.env` 覆盖）
+- `CHAINLIT_AUTH_SECRET`（**必填**，会话 JWT 签名密钥；换掉会注销所有在线用户）
+- `CANNEX_CONFIG_SECRET`（可选，LLM 配置加密密钥；缺省回落 `CHAINLIT_AUTH_SECRET`；轮换会使所有用户 key 失效）
 - `ANTHROPIC_API_KEY` / `ANTHROPIC_BASE_URL` / `CANNEX_MODEL` 由 `webchat/cannex_chat/.env` 提供
+
+> 🔐 **密钥不再硬编码在脚本里**。`run_local.sh` 启动时从 `deploy/.env`（已 gitignore）读取
+> `CHAINLIT_AUTH_SECRET` / `CANNEX_CONFIG_SECRET`，缺失会直接报错。首次部署：
+> ```bash
+> cd <repo-root>/deploy && cp .env.example .env
+> echo "CHAINLIT_AUTH_SECRET=$(openssl rand -hex 32)" >> .env
+> echo "CANNEX_CONFIG_SECRET=$(openssl rand -hex 32)" >> .env
+> ```
 
 **更新后端 / 重启**
 ```bash
@@ -40,11 +48,9 @@ eval "$PFX --delete alice"        # 删除
 ```
 > 增删用户**无需重启**——auth 每次登录现查 SQLite，立即生效。
 
-**当前账号**
-| 用户名 | 密码 |
-|---|---|
-| `test` | `Cannex@2026`（测试账号，可随时用上面命令重置） |
-| `cannex` | 密码未知（早期手动 seed，未记录；需要可 upsert 重置） |
+**账号管理**
+> ⚠️ 不要把明文密码写进本文件（会随 git 入库泄露）。账号一律用上面的 `seed_users.py`
+> 命令创建/重置，密码私下传递。fresh 部署没有任何预置账号，需先 seed。
 
 ---
 
