@@ -46,10 +46,11 @@ def existing_doc_id(meta: dict, doc_name: str) -> str | None:
 def _build_pageindex(pdf_path: Path) -> tuple[str, Path]:
     """PageIndex 建树，返回 (doc_id, json_path)。"""
     from dotenv import load_dotenv
+    from _paths import pageindex_dir
 
-    pageindex_dir = Path.home() / "project" / "CANN" / "PageIndex"
-    load_dotenv(pageindex_dir / ".env")
-    sys.path.insert(0, str(pageindex_dir))
+    pi_dir = pageindex_dir()
+    load_dotenv(pi_dir / ".env")
+    sys.path.insert(0, str(pi_dir))
     from pageindex import PageIndexClient  # noqa: E402
 
     PI_STAGING.mkdir(parents=True, exist_ok=True)

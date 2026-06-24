@@ -5,7 +5,10 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-VENV_PY="$HOME/project/CANN/PageIndex/.venv/bin/python"
+# PageIndex 目录解析：CANNEX_PAGEINDEX_DIR > 仓内 3rd/pageindex/PageIndex > 旧默认
+PAGEINDEX_DIR="${CANNEX_PAGEINDEX_DIR:-$ROOT/3rd/pageindex/PageIndex}"
+[ -d "$PAGEINDEX_DIR" ] || PAGEINDEX_DIR="$HOME/project/CANN/PageIndex"
+VENV_PY="$PAGEINDEX_DIR/.venv/bin/python"
 REPORT_DIR="$ROOT/reports"
 REPORT="$REPORT_DIR/$(date +%Y%m).md"
 
