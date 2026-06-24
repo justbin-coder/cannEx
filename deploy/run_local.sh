@@ -37,8 +37,9 @@ cd "$APP_DIR"
 # shellcheck disable=SC1091
 source .venv/bin/activate
 
-echo "starting chainlit on 0.0.0.0:8000  (log: $LOG_FILE)"
-nohup chainlit run app.py --host 0.0.0.0 --port 8000 --headless \
+PORT="${CANNEX_PORT:-8080}"
+echo "starting chainlit on 0.0.0.0:$PORT  (log: $LOG_FILE)"
+nohup chainlit run app.py --host 0.0.0.0 --port "$PORT" --headless \
   > "$LOG_FILE" 2>&1 &
 echo "started, pid $!"
 echo "tail -f $LOG_FILE  # 查看启动日志"

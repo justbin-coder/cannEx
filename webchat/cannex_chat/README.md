@@ -11,26 +11,59 @@ CannEx 的 Web 形态（Phase 2）——基于 Chainlit + Anthropic tool_use 的
 
 详见 `docs/specs/2026-05-24-webchat-architecture-design.md`。
 
-## 本地运行
+## 本地开发
 
 ```bash
-# 1. 进入项目根，激活 webchat venv
-cd /Users/justbin/Desktop/CannEx
-source webchat/cannex_chat/.venv/bin/activate
+# 1. 进入项目根目录
+cd <项目根>
 
-# 2. 安装依赖（首次）
+# 2. 创建 venv（首次）
+python3.11 -m venv webchat/cannex_chat/.venv
+
+# 3. 激活 venv 并安装依赖
+source webchat/cannex_chat/.venv/bin/activate
 pip install -r webchat/cannex_chat/requirements.txt
 
-# 3. 配置环境变量
+# 4. 配置环境变量
 cp webchat/cannex_chat/.env.example webchat/cannex_chat/.env
-# 编辑 .env，确认 CANNEX_ROOT 指向项目根
+# 编辑 .env，填写 ANTHROPIC_API_KEY（或依赖 BYOK）
+# CANNEX_ROOT 无需设置，代码会自动推导
 
-# 4. 启动 Chainlit（从项目根运行）
-cd /Users/justbin/Desktop/CannEx
-chainlit run webchat/cannex_chat/app.py -w
+# 5. 启动 Chainlit（开发模式，-w 自动重载）
+cd webchat/cannex_chat
+chainlit run app.py -w
 ```
 
-打开 http://localhost:8000，按 UI 提示配置自己的 Anthropic API key（[去 Anthropic Console 申请](https://console.anthropic.com/)）。
+打开 http://localhost:8000，按 UI 提示配置 Anthropic API key。
+
+## 团队部署（Mac / Linux 裸跑）
+
+```bash
+# 一键启动（自动推导路径、停旧进程、绑 0.0.0.0:8000）
+bash deploy/run_local.sh
+```
+
+团队成员通过 `http://<本机IP>:8000` 访问。
+
+用户管理：
+```bash
+# 添加用户
+CANNEX_USERS_DB=$PWD/deploy/cannex.db \
+  PYTHONPATH=$PWD \
+  webchat/cannex_chat/.venv/bin/python3 deploy/seed_users.py <username> <password>
+
+# 列出用户
+# 同上，参数改为 --list
+
+# 删除用户
+# 同上，参数改为 --delete <username>
+```
+
+详见 `deploy/README.md`。
+
+## 生产部署（Docker Compose + HTTPS）
+
+详见 `deploy/README.md`（Docker Compose + Caddy 反代 + 自动 HTTPS）。
 
 ## BYOK 隐私承诺
 
@@ -44,10 +77,6 @@ chainlit run webchat/cannex_chat/app.py -w
 ## 跑测试
 
 ```bash
-cd /Users/justbin/Desktop/CannEx
+cd <项目根>
 python3 -m pytest webchat/cannex_chat/tests/ -v
 ```
-
-## 部署
-
-部署形态（Dockerfile / nginx / HTTPS / 域名）作为独立后续 plan，本工程目前仅支持本地运行。

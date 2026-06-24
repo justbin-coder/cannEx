@@ -34,6 +34,10 @@ def resolve_doc(meta: dict, key: str) -> dict:
     for d in docs:
         if d["doc_id"] == key:
             return d
+    # category 短名精确匹配（如 "operator_api_ref"、"install"）
+    cat_matches = [d for d in docs if d.get("category") == key]
+    if len(cat_matches) == 1:
+        return cat_matches[0]
     matches = [d for d in docs if key in d.get("doc_name", "")]
     if not matches:
         avail = "\n".join(f"  - {d['doc_name']}" for d in docs)

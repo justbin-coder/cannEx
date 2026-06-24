@@ -112,6 +112,18 @@
       "pages": 26,
       "priority": "P2",
       "path": "docs/148c03ff-2fe5-4594-9eee-b71d0937e490.json"
+    },
+    {
+      "doc_id": "242a84f2-7c62-428b-b23c-bdcb4bee53d2",
+      "doc_name": "CANN社区版 9.1.0-beta.1 Ascend C算子开发接口参考 01.pdf",
+      "category": "operator_api_ref",
+      "audience": [
+        "A",
+        "F"
+      ],
+      "pages": 3301,
+      "priority": "P0",
+      "path": "docs/242a84f2-7c62-428b-b23c-bdcb4bee53d2.json"
     }
   ],
   "repos": [
