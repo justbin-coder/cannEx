@@ -69,7 +69,8 @@ def sync_codegraph_to_workspace(repo_name: str, cg_src: Path):
 def _load_dotenv():
     try:
         from dotenv import load_dotenv
-        load_dotenv(Path.home() / "project" / "CANN" / "PageIndex" / ".env")
+        from _paths import pageindex_dir
+        load_dotenv(pageindex_dir() / ".env")
     except ImportError:
         pass
 

@@ -41,8 +41,10 @@ bash 3rd/pageindex/setup.sh
 # ── 2. 安装 CodeGraph 工具 ─────────────────────────────────
 bash 3rd/codegraph/setup.sh
 
-# ── 3. 告诉构建脚本 PageIndex 在哪 ─────────────────────────
-export CANNEX_PAGEINDEX_DIR="$(pwd)/3rd/pageindex/PageIndex"
+# ── 3.（可选）显式指定 PageIndex 位置 ──────────────────────
+# 构建脚本自动按序解析：CANNEX_PAGEINDEX_DIR → 3rd/pageindex/PageIndex → ~/project/CANN/PageIndex。
+# 用上面 setup.sh 的默认位置时此步可跳过；装在别处才需要：
+# export CANNEX_PAGEINDEX_DIR="/你的/PageIndex"
 
 # ── 4. 拉原始素材 + 建库（在 CannEx 根目录）────────────────
 python3 build/sync_sources.py     # 拉 PDF + clone 4 个算子仓 → raw/
