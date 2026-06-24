@@ -107,7 +107,8 @@ fi
 cat <<EOF
 
 $(printf '\033[1;32m环境就绪。\033[0m')下一步：
-  1. 编辑 deploy/.env，填 ANTHROPIC_API_KEY（及 ANTHROPIC_BASE_URL，用代理时）
+  1. 直接启动即可，无需在 .env 里填 LLM key —— 本应用走 BYOK，
+     每个用户登录后在 UI 里填自己的 Anthropic/DeepSeek key。
   2. 启动：  bash deploy/run_local.sh          # 默认 0.0.0.0:8080
      或开发：source $VENV/bin/activate && cd $APP_DIR && chainlit run app.py -w
   3. 建账号：见 deploy/README.md 的 seed_users 用法

@@ -18,7 +18,7 @@ CannEx 的 Web 形态（Phase 2）——基于 Chainlit + Anthropic tool_use 的
 ```bash
 cd <项目根>
 bash bootstrap.sh                  # 依赖装坏时用 bash bootstrap.sh --recreate
-# 按结尾提示编辑 deploy/.env 填 ANTHROPIC_API_KEY，然后启动
+bash deploy/run_local.sh          # 直接启动；LLM key 由用户在 UI 里 BYOK，无需在 .env 填
 ```
 
 ## 本地开发（手动等价步骤）
